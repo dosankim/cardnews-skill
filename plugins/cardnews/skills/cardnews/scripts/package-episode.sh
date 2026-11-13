@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Zip a finished episode folder for handoff. The zip sits next to the folder.
 set -euo pipefail
-dir="${1:-}"
+. "$(cd "$(dirname "$0")" && pwd)/env.sh"
+dir="$(cardnews_to_unix "${1:-}")"
 if [ -z "$dir" ] || [ ! -d "$dir" ]; then
   echo "usage: package-episode.sh episode-folder"
   exit 1

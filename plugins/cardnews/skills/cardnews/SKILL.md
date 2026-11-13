@@ -2,25 +2,33 @@
 name: cardnews
 description: >
   사람이 고른 주제 하나로 한국어 인스타그램 카드뉴스 10장(1080×1350), 캡션, X 글, 나레이션 대본, 9:16 릴스를 만든다.
-  전시·공간·팝업·건축, 뉴스, 제품, 아이디어를 사진·영상 위주로 만들 때 쓴다.
+  뉴스, 방법, 목록, 비교, 이야기, 데이터, 공간 어디든 된다. 판형을 번갈아 쓴다.
   Use when the user asks for Instagram card news, 카드뉴스, a carousel, 릴스, or a Korean social post about one chosen topic.
 ---
 
 # 카드뉴스
 
-사람이 주제를 고르면, 그 주제 하나만 인스타 카드뉴스 한 편으로 만든다. 뉴스를 시간마다 자동으로 찾아 올리지 않는다. 글자는 HTML/CSS로 그리고 헤드리스 크로미움으로 렌더한다. 생성형 이미지로 글자를 그리지 않는다.
+사람이 주제를 고르면, 그 주제 하나만 인스타 카드뉴스 한 편으로 만든다. 분야를 가리지 않는다. 뉴스를 시간마다 자동으로 찾아 올리지 않는다. 글자는 HTML/CSS로 그리고 헤드리스 크로미움으로 렌더한다. 생성형 이미지로 글자를 그리지 않는다.
 
-디자인은 전시 샘플을 따른다. 배경은 `#0b0c0f`, 글자는 흰색, 포인트는 제이드 `#8FE8D6`. 표지만 A(큰 글자) / B(한지, Noto Serif) / C(체크리스트) 중 하나이고, 2–10장은 같은 체계다. [references/design.md](references/design.md).
+색과 글자는 같다. 배경 `#0b0c0f`, 글자 흰색, 포인트 제이드 `#8FE8D6`, 한지 `#efe9dd`. 표지는 A / B / C. 2–10장은 판형을 바꾼다. 바로 앞 장과 같은 판형을 쓰지 않고, 10장에 5종 이상, 빽빽한 장과 한산한 장을 번갈아 둔다. 슬라이드 `layout`이 기본 순서보다 우선한다. [references/design.md](references/design.md).
 
 ## 1. 먼저 설치를 확인한다
 
 편을 만들기 전에, 스킬 폴더에서 한 번 실행한다. 이미 있는 도구는 건너뛴다.
 
+맥·리눅스·Git Bash:
+
 ```bash
 bash scripts/setup.sh
 ```
 
-이게 node, ffmpeg, ffprobe, yt-dlp, Playwright Chromium, Pretendard, 커버 B용 Noto Serif KR을 확인한다. 맥에서는 없는 것을 Homebrew로 넣는다 (`brew install ffmpeg`, `brew install yt-dlp`). 글꼴은 스킬 안의 woff2가 없으면 받는다.
+윈도우 PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
+```
+
+이게 node, ffmpeg, ffprobe, yt-dlp, Playwright Chromium, Pretendard, 커버 B용 Noto Serif KR을 확인한다. 맥은 Homebrew, 윈도우는 winget(없으면 Chocolatey)으로 없는 것만 넣는다. 글꼴은 스킬 안의 woff2가 없으면 받는다. `C:\...` 경로는 Git Bash 스크립트가 `/c/...`로 바꿔 쓴다. 렌더(`node scripts/render-episode.mjs`)는 경로를 인자로만 넘기고, 릴스를 이을 때 드라이브 문자를 이스케이프한다.
 
 ## 2. 채널이 비어 있으면 묻는다
 
@@ -36,30 +44,23 @@ bash scripts/setup.sh
 
 ## 3. 자료를 찾는 순서
 
-한 편은 한 주제다. 갈래가 전시·공간·팝업·건축이면 `space`, 뉴스·제품·아이디어면 `explainer`. 구조는 [references/structures.md](references/structures.md).
+한 편은 한 주제다. `kind`는 `news`, `howto`, `list`, `comparison`, `story`, `data`, `place` 중 하나. 구조는 [references/structures.md](references/structures.md).
 
-### 전시·공간
+그림이 없어도 된다. 문장, 숫자, 순서, 체크, 비교, 연표, 차트, 인용, 한지 판형은 사진 없이 그린다. 차트의 숫자는 확인된 값이거나, 제안이면 카드와 기획서에 제안이라고 적는다.
 
-1. 웹 검색으로 지금 열려 있고 이야기가 되는 전시를 고르거나, 사람이 준 주제를 쓴다. 기간, 장소, 시간, 휴관, 요금은 그 기관 공식 페이지에서 확인한다. 확인하지 못한 것은 `기획서.md`에만 적고, 카드에는 사실처럼 쓰지 않는다.
-2. 기관 공식 유튜브, 또는 홈페이지에 박혀 있는 영상에서 티저, 전시 전경, 큐레이터 투어, 타임랩스를 찾는다.
-3. 필요한 고화질 구간만 받는다. 프레임을 뽑아 얼굴을 빼고, 박힌 자막은 잘라 내고, 7–9초 클립을 만든다.
+### 자료
+
+1. 사람이 준 주제만 다룬다. 날짜, 숫자, 요금, 인용은 1차 자료에서 확인한다. 기관 페이지, 논문, 제품 문서, 공개 데이터. 확인하지 못한 것은 `기획서.md`에만 적고 카드에는 사실처럼 쓰지 않는다.
+2. 그림은 이 순서로 찾는다. 공식 미디어 키트, 사람이 준 사진, CC·위키미디어·Unsplash, 공식 영상의 한 구간, 그래도 없으면 글자 판형.
+3. 영상이 있으면 얼굴과 박힌 자막을 빼고 7–9초만 자른다.
    - 받기: `bash scripts/fetch-media.sh section "URL" src/clip.mp4 시작초 끝초`
-   - 프레임: `bash scripts/extract-frames.sh src/clip.mp4 build/frames 0.5` (0.25도 된다). 0.25–0.5초마다 한 장. 작가나 관람객 얼굴이 보이면 그 구간은 버린다. 시트는 `build/frames/contact.jpg`.
+   - 프레임: `bash scripts/extract-frames.sh src/clip.mp4 build/frames 0.5`
    - 자르기: `bash scripts/cut-clip.sh src/clip.mp4 card.mp4 시작초 8 0.5 0.15 0.84`
-   - 길이는 7–9초. H.264, yuv420p, 1080×1350, `setsar=1`, 무음. 스크립트가 ffprobe로 SAR 1:1을 확인한다.
-   - 화면에 자막이 박혀 있으면 `zoom`을 1보다 작게 (예: `0.84`) 하고 `cropy`를 `0.15`처럼 위로 둔다.
-4. 공식 영상이 없으면 보도자료나 공식 사진에 느린 카메라 무브를 넣는다. `episode.json`에 `video`를 비우면 렌더가 그렇게 하고 `영상메모.txt`에 적는다. 사용자에게 말한다.
-5. 모든 장 오른쪽 아래에 출처 한 줄을 넣는다 (`credit`). 기관 사진·영상을 쓰면, 올리기 전에 그 기관 홍보팀 허락을 받으라고 권한다. 올리거나 예약하지는 않는다.
+   - H.264, yuv420p, 1080×1350, `setsar=1`, 무음. 스크립트가 SAR 1:1을 확인한다.
+4. 공식 영상이 없고 사진이 있으면, `video`를 비운다. 렌더가 느린 카메라 무브를 넣고 `영상메모.txt`에 적는다. 글자 판형은 완성된 카드를 그대로 클립으로 쓴다.
+5. 오른쪽 아래에 출처 한 줄 (`credit`). 기관 자료를 쓰면 올리기 전에 허락을 받으라고 말한다. 올리거나 예약하지는 않는다.
 
-### 뉴스·제품·아이디어
-
-같은 순서의 짧은 버전이다.
-
-1. 사람이 준 주제만 다룬다. 공식 글, 논문, 제품 페이지에서 숫자와 날짜를 확인한다. 확인 못한 것은 기획서에만 둔다.
-2. 공식 계정이나 글에 붙은 영상·스크린샷을 찾는다. 재배포 조건이 불명확하면 쓰지 않는다.
-3. 영상이 있으면 위와 같이 구간만 받고, 얼굴을 빼고, `cut-clip.sh`로 자른다.
-4. 영상이 없으면 공식 스틸에 느린 카메라 무브를 넣고 그 사실을 말한다.
-5. 오른쪽 아래 출처, 게시 전 허락 안내. 카드 구조만 explainer로 바꾼다. 룩은 같다.
+공간 편만 더한다. 지금 열린 전시 중 이야기가 되는 것을 제안할 수 있다. 기간, 시간, 휴관, 요금은 그 기관 페이지에서 확인한다. 사람이 고르기 전에는 만들지 않는다.
 
 ## 4. 만들고 눈으로 확인한다
 
@@ -70,6 +71,8 @@ node scripts/render-episode.mjs /절대경로/episode.json
 ```
 
 `contact_sheet.png`와 PNG를 직접 본다. 글자가 사진을 가리면 문장을 줄이거나 `imagePosition`을 고치고 다시 그린다.
+
+릴스는 Remotion이다. `reel.preset`은 `editorial`(마스크, 크로스페이드), `kinetic`(단어가 나오고 제이드 상자가 그려짐), `push`(장면이 밀림), `tally`(숫자 카운트, 와이프) 중 하나. 없으면 갈래로 고른다. 비트에 `count`를 주면 그 숫자까지 올라간다. 음악은 `--audio`, 나레이션과 같이 주면 음악이 작아진다. Remotion이 없으면 ffmpeg 릴스로 넘긴다.
 
 ## 결과물
 
@@ -89,7 +92,9 @@ node scripts/render-episode.mjs /절대경로/episode.json
 | `bash scripts/fetch-media.sh section URL out.mp4 시작 끝` | 공식 영상 구간 |
 | `bash scripts/extract-frames.sh 영상 폴더 0.5` | 0.5초마다 프레임과 시트 |
 | `bash scripts/cut-clip.sh 입력 출력 시작 8` | 7–9초 카드 클립, SAR 확인 |
-| `node scripts/render-episode.mjs episode.json` | 글자 오버레이, 스틸, 릴스 |
+| `node scripts/render-episode.mjs episode.json` | 글자 오버레이, 스틸, Remotion 릴스 |
+| `node scripts/render-episode.mjs episode.json --ffmpeg-reel` | 릴스만 ffmpeg로 |
+| `node scripts/render-episode.mjs episode.json --reel-only` | 있는 스틸로 릴스만 다시 |
 | `node scripts/render-episode.mjs episode.json --preview-themes --stills-only` | 표지 A B C |
 | `node scripts/render-episode.mjs episode.json --audio 파일` | 사용자가 준 음악만 |
 | `node scripts/render-episode.mjs episode.json --tts` | 나레이션. 기본은 꺼져 있음 |

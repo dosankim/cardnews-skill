@@ -16,6 +16,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import {
+  applyLayouts,
   buildReelHtml,
   buildSlideHtml,
   isOpaqueCover,
@@ -32,8 +33,10 @@ import {
   holdStill,
   mixAudio,
   overlayPng,
+  padCard,
   photoMotion,
 } from "./lib/ffmpeg.mjs";
+import { remotionAvailable, renderRemotionReel } from "./render-reel.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -186,6 +189,7 @@ async function main() {
   const episodePath = path.resolve(jsonPath);
   const episode = JSON.parse(fs.readFileSync(episodePath, "utf8"));
   episode._file = episodePath;
+  applyLayouts(episode);
   const strict = !hasFlag("--allow-short");
   const errors = validateEpisode(episode).filter((error) => {
     if (!error.startsWith("a finished episode")) return true;
@@ -211,11 +215,15 @@ async function main() {
     throw new Error("ffmpeg and ffprobe are required. run scripts/setup.sh");
   }
 
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({
-    viewport: { width: 1080, height: 1350 },
-    deviceScaleFactor: 1,
-  });
+  const reelOnly = hasFlag("--reel-only");
+  const browser = reelOnly ? null : await chromium.launch({ headless: true });
+  let browserClosed = false;
+  const page = browser
+    ? await browser.newPage({
+        viewport: { width: 1080, height: 1350 },
+        deviceScaleFactor: 1,
+      })
+    : null;
 
   try {
     if (preview) {
@@ -231,9 +239,17 @@ async function main() {
       const video = absMedia(episode, slide.video);
       if (image && !fs.existsSync(image)) throw new Error(`missing image for slide ${index}: ${image}`);
       if (video && !fs.existsSync(video)) throw new Error(`missing video for slide ${index}: ${video}`);
-      const prepared = { ...slide, image };
+      const prepared = {
+        ...slide,
+        image,
+        images: (slide.images || []).map((item) => absMedia(episode, item)),
+      };
       const baseName = slideBase(index, prepared);
       const png = path.join(outDir, `${baseName}.png`);
+      if (reelOnly) {
+        if (!fs.existsSync(png)) throw new Error(`--reel-only needs ${png}`);
+        continue;
+      }
       const rawPng = path.join(work, `${baseName}-raw.png`);
       await shoot(
         page,
@@ -252,7 +268,7 @@ async function main() {
         console.warn(`slide ${index} is ${seconds}s. carousel clips should be 7–9s.`);
       }
       const mp4 = path.join(outDir, `${baseName}.mp4`);
-      if (isOpaqueCover(prepared, episode)) {
+      if (isOpaqueCover(prepared, episode) || (!image && !video)) {
         holdStill({ image: png, output: mp4, seconds, crf, preset });
         motions.push({ index, name: baseName, motion: "still" });
       } else {
@@ -304,7 +320,7 @@ async function main() {
     }
 
     const sheet = path.join(outDir, "contact_sheet.png");
-    await renderContact(
+    if (page) await renderContact(
       page,
       episode.slides.map((slide, i) => {
         const base = path.join(outDir, slideBase(i + 1, slide));
@@ -317,7 +333,7 @@ async function main() {
       }),
       sheet,
     );
-    console.log(`contact → ${path.relative(process.cwd(), sheet)}`);
+    if (page) console.log(`contact → ${path.relative(process.cwd(), sheet)}`);
 
     writeText(outDir, "기획서.md", episode.plan);
     writeText(outDir, "게시글문구.txt", episode.caption);
@@ -325,6 +341,31 @@ async function main() {
     writeText(outDir, "나레이션대본.txt", episode.narration);
 
     if (!stillsOnly && !hasFlag("--no-reel")) {
+      const audio = argValue("--audio");
+      let narrationAudio = argValue("--narration-audio");
+      if (hasFlag("--tts")) {
+        narrationAudio = await synthesizeNarration(outDir, episode.narration || "");
+      }
+      let usedRemotion = false;
+      if (!hasFlag("--ffmpeg-reel") && remotionAvailable()) {
+        if (browser && !browserClosed) {
+          await browser.close();
+          browserClosed = true;
+        }
+        try {
+          const reel = renderRemotionReel({ episode, outDir, crf, audio, narration: narrationAudio });
+          const info = assertFrame(reel, 1080, 1920);
+          console.log(`reel remotion ${info.duration.toFixed(2)}s ${(info.size / 1e6).toFixed(2)}MB → ${reel}`);
+          usedRemotion = true;
+        } catch (error) {
+          console.warn(`Remotion 릴스를 못 그렸어요. ffmpeg로 넘겨요.\n${error.message}`);
+        }
+      } else if (!hasFlag("--ffmpeg-reel")) {
+        console.warn("Remotion이 없어요. ffmpeg 릴스로 만들어요. bash scripts/setup.sh");
+      }
+      if (usedRemotion) {
+        /* motion reel already written */
+      } else {
       const beats = episode.reel?.beats?.length ? episode.reel.beats : autoBeats(episode.slides);
       const parts = [];
       let cursor = 0;
@@ -334,18 +375,17 @@ async function main() {
         if (!slide) throw new Error(`reel beat ${i + 1} points at missing slide ${beat.slide}`);
         const seconds = Number(beat.seconds || 3.2);
         cursor += seconds;
-        const image = absImage(episode, slide);
+        const cardPng = path.join(outDir, `${slideBase(beat.slide || 1, slide)}.png`);
         const reelBase = path.join(work, `reel-base-${i}.mp4`);
-        photoMotion({
-          input: image,
+        padCard({
+          image: cardPng,
           output: reelBase,
-          width: 1080,
-          height: 1920,
           seconds,
-          motion: beat.motion || (i % 2 === 0 ? "zoom-in" : "pan-up"),
           crf,
+          preset,
         });
         const reelOverlay = path.join(work, `reel-overlay-${i}.png`);
+        if (!page) throw new Error("ffmpeg reel needs the browser. Re-run without --reel-only.");
         await page.setViewportSize({ width: 1080, height: 1920 });
         await shoot(
           page,
@@ -363,11 +403,6 @@ async function main() {
       }
       let reel = path.join(outDir, "reel.mp4");
       concatVideos({ files: parts, output: reel });
-      const audio = argValue("--audio");
-      let narrationAudio = argValue("--narration-audio");
-      if (hasFlag("--tts")) {
-        narrationAudio = await synthesizeNarration(outDir, episode.narration || "");
-      }
       if (audio || narrationAudio) {
         const mixed = path.join(work, "reel-audio.mp4");
         if (audio && narrationAudio) {
@@ -382,9 +417,10 @@ async function main() {
       if (cursor < 20 || cursor > 30) {
         console.warn(`reel is ${cursor.toFixed(1)}s. aim for about 20–30s.`);
       }
+      }
     }
   } finally {
-    await browser.close();
+    if (browser && !browserClosed) await browser.close();
     fs.rmSync(work, { recursive: true, force: true });
   }
 }

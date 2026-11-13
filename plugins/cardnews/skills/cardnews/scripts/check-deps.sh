@@ -72,7 +72,7 @@ fi
 
 echo
 if [ "$ok" -ne 0 ]; then
-  echo "아직 렌더할 수 없어요. 스킬 폴더에서 bash scripts/setup.sh 를 실행해요."
+  echo "아직 렌더할 수 없어요. 스킬 폴더에서 bash scripts/setup.sh (PowerShell이면 scripts/setup.ps1) 를 실행해요."
   exit 1
 fi
 if [ "$warn" -ne 0 ]; then

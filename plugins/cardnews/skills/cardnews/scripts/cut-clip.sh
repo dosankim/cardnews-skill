@@ -7,8 +7,8 @@
 # 결과: H.264, yuv420p, 1080x1350, setsar=1, 무음. ffprobe로 SAR 1:1을 확인한다.
 set -euo pipefail
 . "$(cd "$(dirname "$0")" && pwd)/env.sh"
-in="${1:-}"
-out="${2:-}"
+in="$(cardnews_to_unix "${1:-}")"
+out="$(cardnews_to_unix "${2:-}")"
 start="${3:-}"
 dur="${4:-8}"
 cx="${5:-0.5}"

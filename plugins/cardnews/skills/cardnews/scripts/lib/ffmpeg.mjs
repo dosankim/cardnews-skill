@@ -24,8 +24,14 @@ if (process.platform === "win32") {
   process.env[key] = [...extra.filter((d) => d && fs.existsSync(d) && !cur.includes(d)), ...cur].join(path.delimiter);
 }
 
+export function concatEntry(absPath, win = process.platform === "win32") {
+  let p = String(absPath).replace(/\\/g, "/");
+  if (win && /^[A-Za-z]:\//.test(p)) p = `${p[0]}\\:${p.slice(2)}`;
+  return `file '${p.replace(/'/g, "'\\''")}'`;
+}
+
 function run(bin, args) {
-  const result = spawnSync(bin, args, { encoding: "utf8" });
+  const result = spawnSync(bin, args, { encoding: "utf8", windowsHide: true, shell: false });
   if (result.error) {
     throw new Error(`${bin} failed to start: ${result.error.message}`);
   }
@@ -175,6 +181,32 @@ export function overlayPng({ video, png, output, crf, grain = true, preset = "fa
   ]);
 }
 
+export function padCard({ image, output, seconds, crf, preset = "fast" }) {
+  run("ffmpeg", [
+    "-y",
+    "-loop",
+    "1",
+    "-i",
+    image,
+    "-t",
+    String(seconds),
+    "-vf",
+    "scale=1080:1350,pad=1080:1920:0:420:color=0x0b0c0f,setsar=1,fps=30,format=yuv420p",
+    "-an",
+    "-c:v",
+    "libx264",
+    "-preset",
+    preset,
+    "-crf",
+    String(crf),
+    "-pix_fmt",
+    "yuv420p",
+    "-movflags",
+    "+faststart",
+    output,
+  ]);
+}
+
 export function holdStill({ image, output, seconds, crf, preset = "fast" }) {
   run("ffmpeg", [
     "-y",
@@ -220,10 +252,8 @@ export function grainStill({ input, output }) {
 
 export function concatVideos({ files, output }) {
   const list = path.join(path.dirname(output), ".concat.txt");
-  const body = files
-    .map((file) => `file '${file.replace(/'/g, "'\\''")}'`)
-    .join("\n");
-  fs.writeFileSync(list, body);
+  const body = `${files.map((file) => concatEntry(path.resolve(file))).join("\n")}\n`;
+  fs.writeFileSync(list, body, "utf8");
   run("ffmpeg", [
     "-y",
     "-f",

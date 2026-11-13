@@ -11,6 +11,11 @@
     "self-check": "node scripts/self-check.mjs"
   },
   "dependencies": {
-    "playwright": "^1.56.0"
+    "@remotion/cli": "^4.0.543",
+    "@remotion/transitions": "^4.0.543",
+    "playwright": "^1.56.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.543"
   }
 }

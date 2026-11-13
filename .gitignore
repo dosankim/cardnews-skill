@@ -4,3 +4,4 @@ node_modules/
 .playwright/
 *.zip
 examples/**/media/src/
+plugins/cardnews/skills/cardnews/remotion/public/
