@@ -1,8 +1,8 @@
 {
   "title": "질문을 이렇게 써요",
   "kind": "howto",
+  "look": "swiss",
   "cover": "C",
-  "header": "HOW TO ASK",
   "channel": "작업노트",
   "handle": "@your_channel",
   "credit": "방법 제안",
@@ -28,7 +28,7 @@
       "role": "content",
       "layout": "compare",
       "slug": "compare",
-      "kicker": "COMPARE",
+      "kicker": "비교",
       "title": "같은 일, 다른 말",
       "columns": [
         {
@@ -54,7 +54,6 @@
       "role": "content",
       "layout": "statement",
       "slug": "idea",
-      "kicker": "한 줄",
       "title": "한 번에\n한 가지만\n맡기세요",
       "body": "일이 두 개면 답도 두 갈래로 흩어져요.",
       "credit": "방법 제안"
@@ -63,7 +62,6 @@
       "role": "content",
       "layout": "steps",
       "slug": "steps",
-      "kicker": "STEPS",
       "title": "네 줄이면 돼요",
       "steps": [
         {
@@ -89,7 +87,7 @@
       "role": "content",
       "layout": "stat",
       "slug": "stat",
-      "kicker": "ONE JOB",
+      "kicker": "한 번에",
       "stat": "1",
       "unit": "가지 일",
       "title": "질문에 동사는 하나",
@@ -100,8 +98,7 @@
       "role": "content",
       "layout": "checklist",
       "slug": "check",
-      "kicker": "CHECK",
-      "title": "보내기 전에",
+      "title": "보내기 전에 확인",
       "items": [
         "독자가 적혀 있나",
         "빠질 것이 적혀 있나",
@@ -122,7 +119,7 @@
       "role": "content",
       "layout": "chart",
       "slug": "chart",
-      "kicker": "MIX",
+      "kicker": "제안",
       "title": "시간을 이렇게 나눠 보세요",
       "body": "연구가 아니라, 초안을 맡길 때의 제안이에요.",
       "bars": [
@@ -149,7 +146,6 @@
       "role": "content",
       "layout": "hanji",
       "slug": "recap",
-      "kicker": "RECAP",
       "title": "맥락, 요청,\n예시, 모양.",
       "body": "이 네 칸이 있으면 다시 시키지 않아도 돼요.",
       "credit": "방법 제안"
@@ -158,8 +154,7 @@
       "role": "tips",
       "layout": "tips",
       "slug": "save",
-      "kicker": "SAVE",
-      "title": "저장",
+      "title": "저장해 두세요",
       "price": "",
       "tips": [
         {
@@ -176,7 +171,6 @@
         }
       ],
       "cta": "다음 일에 다시 꺼내 봐요",
-      "ctaMark": "SAVE ↗",
       "credit": "방법 제안"
     }
   ],
@@ -251,7 +245,7 @@
       }
     ]
   },
-  "plan": "# 질문을 이렇게 써요\n\n## 한 줄\n일을 맡기기 전에, 질문을 네 칸으로 적는 방법.\n\n## 사실\n이 편은 측정된 연구가 아니에요. 막대그래프의 40 · 30 · 20 · 10도 초안을 맡길 때 시간을 나누는 제안이에요. 기획서에 그 점을 적어요.\n\n## 갈래\nhow-to. 표지는 C. 사진은 쓰지 않고 판형으로 리듬을 만들어요.\n",
+  "plan": "# 질문을 이렇게 써요\n\n## 한 줄\n일을 맡기기 전에, 질문을 네 칸으로 적는 방법.\n\n## 사실\n이 편은 측정된 연구가 아니에요. 막대그래프의 40 · 30 · 20 · 10도 초안을 맡길 때 시간을 나누는 제안이에요. 기획서에 그 점을 적어요.\n\n## 갈래\nhow-to. 룩은 swiss(포스터), 표지는 C. 사진은 쓰지 않고 판형으로 리듬을 만들어요.\n",
   "caption": "질문을 이렇게 써요.\n\n한 번에 한 가지. 역할, 재료, 요청, 모양.\n예시 하나가 설명 열 줄보다 빨라요.\n\n막대는 연구가 아니라, 초안에 시간을 나누는 제안이에요.\n\n저장해 두고 다음 일에 꺼내 보세요.\n\n#카드뉴스 #글쓰기 #일하는법",
   "xPost": "질문을 이렇게 써요.\n\n한 번에 한 가지.\n역할, 재료, 요청, 모양.\n예시 하나가 설명보다 빨라요.\n\n막대그래프는 연구가 아니라 시간 나누기 제안이에요.",
   "narration": "질문을 이렇게 써요.\n흐린 말과 또렷한 말은 같은 일인데 답이 달라요.\n한 번에 한 가지만 맡기세요.\n역할, 재료, 요청, 모양. 네 줄이면 돼요.\n예시 하나가 설명 열 줄보다 빨라요.\n저장해 두고 다음 일에 꺼내 보세요."

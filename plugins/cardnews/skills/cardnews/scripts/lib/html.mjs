@@ -1,79 +1,37 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { applyLayouts, isComposed, layoutCss, layoutInner, needsPhoto } from "./layouts.mjs";
+import { CSS, applyLayouts, buildLayout, needsPhoto, surfaceFor } from "./layouts.mjs";
+import { LOOKS, LOOK_NAMES, LOOKS_BY_KIND, fontFiles, resolveLook, surfaceVars } from "./looks.mjs";
+import { normalizeKind } from "./layouts.mjs";
 
-export { applyLayouts, isComposed, needsPhoto };
+export { applyLayouts, needsPhoto };
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
 const FONTS = path.join(ROOT, "assets/fonts");
-const GRAIN = path.join(ROOT, "assets/grain.png");
-
-const JADE = "#8FE8D6";
-const DEEP = "#0f7f6e";
-const INK = "#0b0c0f";
-const HANJI = "#efe9dd";
-const HANJI_INK = "#16181c";
 
 export function listThemes() {
   return ["A", "B", "C"];
 }
 
-function fileUrl(abs) {
+export function fileUrl(abs) {
   return pathToFileURL(abs).href;
 }
 
-function fontCss() {
-  const face = (family, weight, file) =>
-    `@font-face{font-family:${family};font-weight:${weight};font-style:normal;font-display:block;src:url("${fileUrl(path.join(FONTS, file))}") format("woff2")}`;
-  return [
-    face("P", 300, "Pretendard-Light.woff2"),
-    face("P", 400, "Pretendard-Regular.woff2"),
-    face("P", 500, "Pretendard-Medium.woff2"),
-    face("P", 600, "Pretendard-SemiBold.woff2"),
-    face("P", 700, "Pretendard-Bold.woff2"),
-    face("P", 800, "Pretendard-ExtraBold.woff2"),
-    face("P", 900, "Pretendard-Black.woff2"),
-    face("'Noto Serif CJK KR'", 700, "noto-serif-kr-korean-700-normal.woff2"),
-  ].join("\n");
-}
-
-const BASE = `
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{width:1080px;height:1350px;background:transparent;overflow:hidden}
-body{font-family:P,'Noto Sans CJK KR',sans-serif;color:#fff;-webkit-font-smoothing:antialiased;word-break:keep-all}
-.page{position:absolute;inset:0}
-.mesh{position:absolute;inset:0;opacity:.07;background:
- repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 9px),repeating-linear-gradient(90deg,#fff 0 1px,transparent 1px 9px)}
-.top{position:absolute;left:64px;right:64px;top:56px;display:flex;justify-content:space-between;align-items:center;
- font-weight:600;font-size:19px;letter-spacing:.22em;color:rgba(255,255,255,.78)}
-.top .idx{color:${JADE};letter-spacing:.12em}
-.credit{position:absolute;right:64px;bottom:44px;font-size:16px;color:rgba(255,255,255,.5);letter-spacing:.02em;max-width:70%;text-align:right}
-.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:${INK}}
-`;
-
-export function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-/** {{word}} becomes a highlight. Newlines become <br>. */
-export function rich(text, mode) {
-  const raw = String(text ?? "");
-  const parts = raw.split(/(\{\{[\s\S]*?\}\})/g);
-  return parts
-    .map((part) => {
-      const mark = part.match(/^\{\{([\s\S]*)\}\}$/);
-      if (!mark) return escapeHtml(part).replace(/\n/g, "<br>");
-      const inner = escapeHtml(mark[1]).replace(/\n/g, "<br>");
-      if (mode === "em") return `<em>${inner}</em>`;
-      return `<span class="hl">${inner}</span>`;
+/** base 가 있으면 그 폴더 기준 상대 주소로 쓴다. 릴스 프로젝트가 글꼴을 복사해 갈 때 쓴다. */
+export function fontCss(base) {
+  return fontFiles()
+    .filter(({ file }) => fs.existsSync(path.join(FONTS, file)))
+    .map(({ family, weight, file }) => {
+      const src = base ? `${base}/${file}` : fileUrl(path.join(FONTS, file));
+      return `@font-face{font-family:${family};font-weight:${weight};font-style:normal;font-display:block;src:url("${src}") format("woff2")}`;
     })
-    .join("");
+    .join("\n");
+}
+
+export function fontDir() {
+  return FONTS;
 }
 
 export function slideKind(role) {
@@ -87,240 +45,146 @@ export function coverStyle(slide, episode) {
   return String(slide.cover || episode?.cover || "A").toUpperCase();
 }
 
-function page(extraCss, inner, { width = 1080, height = 1350 } = {}) {
-  const sized =
-    width === 1080 && height === 1350
-      ? BASE
-      : BASE.replace("height:1350px", `height:${height}px`).replace("width:1080px", `width:${width}px`);
-  return `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><style>${fontCss()}${sized}</style><style>${extraCss}</style></head><body><div class="page">${inner}</div></body></html>`;
+/** episode.look 이 없으면 갈래의 첫 룩. */
+export function lookFor(episode) {
+  const asked = String(episode?.look || "").toLowerCase();
+  if (LOOKS[asked]) return asked;
+  const kind = normalizeKind(episode?.kind);
+  return (LOOKS_BY_KIND[kind] || ["press"])[0];
 }
 
-function topbar(header, index, total) {
-  const label = String(index).padStart(2, "0");
-  const of = total ? `${label} / ${String(total).padStart(2, "0")}` : label;
-  return `<div class="top"><span>${escapeHtml(header || "")}</span><span class="idx">${of}</span></div>`;
+/** data-fit 글자를 상자에 맞게 키운다. 화면 안에서 돈다. 릴스도 같은 함수를 쓴다. */
+export const FIT_FN = `
+function __fit() {
+  const issues = [];
+  for (const el of document.querySelectorAll("[data-fit]")) {
+    const box = el.parentElement;
+    const inner = el.firstElementChild;
+    const max = Number(el.dataset.max);
+    const min = Number(el.dataset.min);
+    const cs = getComputedStyle(box);
+    const W = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const fixed = Number(el.dataset.maxh) || 0;
+    const ok = (size) => {
+      el.style.fontSize = size + "px";
+      const r = inner.getBoundingClientRect();
+      const H = fixed || box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - [...box.children].filter((c) => c !== el).reduce((s, c) => s + c.offsetHeight, 0);
+      return r.width <= W + 1 && inner.scrollWidth <= inner.clientWidth + 1 && r.height <= H + 1;
+    };
+    if (ok(max)) continue;
+    let lo = min;
+    let hi = max;
+    if (!ok(min)) {
+      issues.push("제목이 길어서 가장 작은 크기로도 넘쳐요: " + inner.textContent.slice(0, 16));
+      continue;
+    }
+    while (hi - lo > 1) {
+      const mid = Math.floor((lo + hi) / 2);
+      if (ok(mid)) lo = mid; else hi = mid;
+    }
+    ok(lo);
+  }
+  return issues;
 }
+`;
 
-function bgImg(image, position) {
-  if (!image) return "";
-  const pos = escapeHtml(position || "center center");
-  return `<img class="bg" alt="" src="${fileUrl(image)}" style="object-position:${pos}">`;
-}
-
-function contentCss() {
-  return `.gt{position:absolute;left:0;right:0;top:0;height:260px;background:linear-gradient(rgba(0,0,0,.55),transparent)}
-.gb{position:absolute;left:0;right:0;bottom:0;height:720px;background:linear-gradient(transparent,rgba(8,9,11,.62) 38%,rgba(8,9,11,.9))}
-.box{position:absolute;left:64px;right:64px;bottom:104px}
-.rule{width:52px;height:4px;background:${JADE};margin-bottom:22px}
-.label{font-weight:600;font-size:23px;color:${JADE};margin-bottom:18px;letter-spacing:.01em;line-height:1.4}
-.title{font-weight:800;font-size:54px;line-height:1.24;letter-spacing:-.025em;margin-bottom:24px}
-.body{font-weight:400;font-size:28.5px;line-height:1.62;color:rgba(255,255,255,.86);letter-spacing:-.01em}`;
-}
-
-function htmlContent(slide, ctx, withPhoto) {
-  const inner = `${withPhoto ? bgImg(slide.image, slide.imagePosition) : ""}
-<div class="gt"></div><div class="gb"></div>${topbar(ctx.header, ctx.index, ctx.total)}
-<div class="box"><div class="rule"></div><div class="label">${escapeHtml(slide.kicker || slide.label || "")}</div>
-<div class="title">${rich(slide.title, "plain")}</div>
-<div class="body">${rich(slide.body || "", "plain")}</div></div>
-<div class="credit">${escapeHtml(slide.credit || ctx.credit || "")}</div>`;
-  return page(contentCss(), inner);
-}
-
-function htmlInfo(slide, ctx, withPhoto) {
-  const css = `${withPhoto ? "" : `body{background:${INK}}`}
-.veil{position:absolute;inset:0;background:rgba(8,9,11,.58)}
-.gt{position:absolute;left:0;right:0;top:0;height:260px;background:linear-gradient(rgba(0,0,0,.4),transparent)}
-.box{position:absolute;left:64px;right:64px;top:168px}
-.rule{width:52px;height:4px;background:${JADE};margin-bottom:22px}
-.label{font-weight:600;font-size:23px;color:${JADE};margin-bottom:16px;letter-spacing:.18em}
-.title{font-weight:800;font-size:60px;letter-spacing:-.03em;margin-bottom:48px}
-.row{display:flex;border-top:1px solid rgba(255,255,255,.22);padding:26px 0}
-.row:last-child{border-bottom:1px solid rgba(255,255,255,.22)}
-.k{width:168px;flex:none;font-weight:600;font-size:26px;color:${JADE};padding-top:3px}
-.v{font-weight:500;font-size:31px;line-height:1.5;letter-spacing:-.015em}
-.sm{font-size:24px;font-weight:400;color:rgba(255,255,255,.72)}`;
-  const rows = (slide.facts || [])
-    .map((fact) => {
-      const value = rich(String(fact.value ?? "").replace(/\\n/g, "\n"), "plain");
-      return `<div class="row"><div class="k">${escapeHtml(fact.label)}</div><div class="v">${value}</div></div>`;
-    })
-    .join("");
-  const inner = `${withPhoto ? bgImg(slide.image, slide.imagePosition) : ""}
-${withPhoto ? '<div class="veil"></div><div class="mesh" style="opacity:.04"></div><div class="gt"></div>' : ""}
-${topbar(ctx.header, ctx.index, ctx.total)}
-<div class="box"><div class="rule"></div><div class="label">${escapeHtml(slide.kicker || "VISIT INFO")}</div>
-<div class="title">${escapeHtml(slide.title || "관람 정보")}</div>${rows}</div>
-<div class="credit">${escapeHtml(slide.credit || ctx.credit || "")}</div>`;
-  return page(css, inner);
-}
-
-function tipPairs(slide) {
-  const tips = slide.tips || [];
-  return tips.map((tip) => {
-    if (typeof tip === "string") return { k: tip, v: "" };
-    return { k: tip.k || tip.title || tip.label || "", v: tip.v || tip.text || tip.value || "" };
+/** 넘친 글, 너무 작은 글, 빈 화면을 찾아 window.__report 에 적는다. */
+const FIT = `${FIT_FN}
+(async () => {
+  await document.fonts.ready;
+  const issues = __fit();
+  const page = document.querySelector(".page");
+  const PW = page.clientWidth;
+  const PH = page.clientHeight;
+  const seen = new Set();
+  let top = PH;
+  let bottom = 0;
+  const walker = document.createTreeWalker(page, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (!node.textContent.trim()) continue;
+    const el = node.parentElement;
+    if (el.closest(".qm")) continue;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const r = range.getBoundingClientRect();
+    if (!r.width) continue;
+    top = Math.min(top, r.top);
+    bottom = Math.max(bottom, r.bottom);
+    const label = node.textContent.trim().slice(0, 14);
+    if ((r.left < 20 || r.right > PW - 20 || r.top < 8 || r.bottom > PH - 8) && !seen.has(el)) {
+      seen.add(el);
+      issues.push("글이 화면 밖으로 나가요: " + label);
+    }
+    const size = parseFloat(getComputedStyle(el).fontSize);
+    if (size < 20.5 && !seen.has(el)) {
+      seen.add(el);
+      issues.push("글자가 너무 작아요(" + Math.round(size) + "px): " + label);
+    }
+  }
+  for (const el of page.querySelectorAll(".stage,.row,.pan,.col,.txt,.ttl,.hdb,.rail,.rows,.pans,.strip > span:not(.folio)")) {
+    if (el.scrollHeight > el.clientHeight + 3 || el.scrollWidth > el.clientWidth + 3) {
+      const text = (el.textContent || "").trim().slice(0, 14);
+      issues.push("칸이 넘쳐요: " + text);
+    }
+  }
+  const wins = [...page.querySelectorAll("[data-win]")].map((el) => {
+    const r = el.getBoundingClientRect();
+    top = Math.min(top, r.top);
+    bottom = Math.max(bottom, r.bottom);
+    return { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) };
   });
-}
+  for (const w of wins) {
+    if (w.h < 300 || w.w < 300) issues.push("사진 칸이 너무 작아요(" + w.w + "×" + w.h + "). 글을 줄이세요.");
+  }
+  const used = (bottom - top) / PH;
+  if (used < 0.62) issues.push("화면의 " + Math.round((1 - used) * 100) + "%가 비어 있어요.");
+  window.__report = { issues: [...new Set(issues)], wins };
+})();
+`;
 
-function htmlTips(slide, ctx, withPhoto) {
-  const css = `${withPhoto ? "" : `body{background:${INK}}`}
-.veil{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,9,11,.86) 0,rgba(8,9,11,.7) 60%,rgba(8,9,11,.45))}
-.box{position:absolute;left:64px;right:64px;top:168px}
-.rule{width:52px;height:4px;background:${JADE};margin-bottom:22px}
-.label{font-weight:600;font-size:23px;color:${JADE};margin-bottom:16px;letter-spacing:.18em}
-.price{display:flex;align-items:baseline;gap:20px;margin-bottom:36px}
-.price b{font-weight:900;font-size:112px;letter-spacing:-.04em;line-height:1}
-.price span{font-size:28px;color:rgba(255,255,255,.75);font-weight:500}
-.tip{border-top:1px solid rgba(255,255,255,.22);padding:18px 0}
-.tk{font-weight:700;font-size:30px;margin-bottom:6px}
-.tv{font-weight:400;font-size:26px;color:rgba(255,255,255,.8);line-height:1.45}
-.cta{position:absolute;left:64px;right:64px;bottom:96px;display:flex;justify-content:space-between;align-items:center;
- border:2px solid ${JADE};border-radius:999px;padding:22px 34px;font-weight:700;font-size:30px}
-.cta i{font-style:normal;color:${JADE};font-weight:600;font-size:24px;letter-spacing:.06em}`;
-  const price = slide.price
-    ? `<div class="price"><b>${escapeHtml(slide.price)}</b><span>${escapeHtml(slide.priceNote || "")}</span></div>`
-    : "";
-  const tips = tipPairs(slide)
-    .map(
-      (tip) =>
-        `<div class="tip"><div class="tk">${escapeHtml(tip.k)}</div>${tip.v ? `<div class="tv">${escapeHtml(tip.v)}</div>` : ""}</div>`,
-    )
-    .join("");
-  const cta = slide.cta === false
-    ? ""
-    : `<div class="cta"><span>${escapeHtml(slide.cta || "저장해 두고 나중에 봐요")}</span><i>${escapeHtml(slide.ctaMark || "SAVE ↗")}</i></div>`;
-  const inner = `${withPhoto ? bgImg(slide.image, slide.imagePosition) : ""}
-${withPhoto ? '<div class="veil"></div>' : ""}${topbar(ctx.header, ctx.index, ctx.total)}
-<div class="box"><div class="rule"></div><div class="label">${escapeHtml(slide.kicker || "TICKET & TIP")}</div>
-${price}${tips}</div>${cta}
-<div class="credit">${escapeHtml(slide.credit || ctx.credit || "")}</div>`;
-  return page(css, inner);
-}
-
-function htmlCoverA(slide, ctx, withPhoto) {
-  const css = `body{background:${INK}}
-.g{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35) 0,rgba(0,0,0,0) 30%,rgba(0,0,0,.28) 48%,rgba(6,7,9,.9) 100%)}
-.chip{position:absolute;left:64px;top:60px;border:2px solid #fff;border-radius:999px;padding:11px 22px;font-weight:700;font-size:24px;letter-spacing:-.01em;background:rgba(0,0,0,.25)}
-.handle{position:absolute;right:64px;top:70px;font-weight:600;font-size:20px;color:rgba(255,255,255,.7);letter-spacing:.04em}
-.kick{position:absolute;left:64px;bottom:770px;font-weight:800;font-size:32px;color:${INK};background:#fff;padding:8px 16px;letter-spacing:-.01em}
-.big{position:absolute;left:56px;bottom:206px;font-weight:900;font-size:176px;line-height:.98;letter-spacing:-.065em;text-shadow:0 6px 40px rgba(0,0,0,.35)}
-.big .hl{display:inline-block;background:${JADE};color:${INK};padding:0 18px 8px 14px;margin-left:-6px;transform:rotate(-2deg)}
-.meta{position:absolute;left:64px;right:64px;bottom:70px;display:flex;justify-content:space-between;align-items:flex-end;border-top:2px solid rgba(255,255,255,.8);padding-top:20px;font-weight:600;font-size:25px}
-.meta .r{color:${JADE}}`;
-  const inner = `${withPhoto ? bgImg(slide.image, slide.imagePosition) : ""}
-<div class="mesh" style="opacity:.06"></div><div class="g"></div>
-<div class="chip">${escapeHtml(slide.chip || "")}</div>
-<div class="handle">${escapeHtml(ctx.handle || "")}</div>
-<div class="kick">${escapeHtml(slide.kick || slide.kicker || "")}</div>
-<div class="big">${rich(slide.title, "hl")}</div>
-<div class="meta"><span>${escapeHtml(slide.metaLeft || "")}</span><span class="r">${escapeHtml(slide.metaRight || "")}</span></div>`;
-  return page(css, inner);
-}
-
-function htmlCoverB(slide, ctx) {
-  const photo = slide.image ? fileUrl(slide.image) : "";
-  const grain = fileUrl(GRAIN);
-  const css = `body{background:${HANJI}}
-.paper{position:absolute;inset:0;background:${HANJI}}
-.grain{position:absolute;inset:0;opacity:.35;background-image:url('${grain}');background-size:cover;mix-blend-mode:multiply}
-.head{position:absolute;left:64px;right:64px;top:64px;color:${HANJI_INK};font-family:'Noto Serif CJK KR',serif;font-weight:700;font-size:74px;line-height:1.22;letter-spacing:-.035em}
-.head em{font-style:normal;color:${DEEP}}
-.photo{position:absolute;left:64px;right:64px;top:300px;height:720px;background:${INK} url('${photo}') ${escapeHtml(slide.imagePosition || "center")} / cover no-repeat}
-.meta{position:absolute;left:64px;right:64px;bottom:74px;display:flex;justify-content:space-between;color:${HANJI_INK};font-weight:600;font-size:24px}
-.tag{position:absolute;left:84px;top:1000px;transform:translateY(-100%);background:${HANJI_INK};color:${HANJI};font-weight:700;font-size:22px;padding:10px 18px;letter-spacing:.04em}
-.handle{position:absolute;right:64px;top:1040px;color:rgba(22,24,28,.6);font-weight:600;font-size:20px}`;
-  const inner = `<div class="paper"></div><div class="photo"></div>
-<div class="tag">${escapeHtml(slide.tag || ctx.header || "")}</div>
-<div class="head">${rich(slide.title, "em")}</div>
-<div class="handle">${escapeHtml(ctx.handle || "")}</div>
-<div class="meta"><span>${escapeHtml(slide.metaLeft || "")}</span><span>${escapeHtml(slide.metaRight || "")}</span></div>`;
-  return page(css, inner);
-}
-
-function htmlCoverC(slide, ctx, withPhoto) {
-  const css = `.g{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,7,9,.78),rgba(6,7,9,.25) 45%,rgba(6,7,9,.9))}
-body{background:${INK}}
-.k{position:absolute;left:64px;top:64px;font-weight:800;font-size:30px;color:${JADE};letter-spacing:-.01em}
-.handle{position:absolute;right:64px;top:72px;font-weight:600;font-size:20px;color:rgba(255,255,255,.7)}
-.h{position:absolute;left:60px;top:140px;font-weight:900;font-size:128px;line-height:1.02;letter-spacing:-.06em}
-.h .hl{color:${JADE};background:none;padding:0;margin:0;transform:none;display:inline}
-.list{position:absolute;left:64px;bottom:150px;display:flex;flex-direction:column;gap:14px}
-.list div{display:inline-flex;align-self:flex-start;background:rgba(255,255,255,.94);color:${INK};font-weight:800;font-size:32px;padding:12px 22px;border-radius:10px}
-.list div b{color:${DEEP};margin-right:12px}
-.meta{position:absolute;left:64px;right:64px;bottom:70px;display:flex;justify-content:space-between;font-weight:600;font-size:24px;color:rgba(255,255,255,.85)}`;
-  const items = (slide.items || [])
-    .slice(0, 3)
-    .map((item, i) => `<div><b>${String(i + 1).padStart(2, "0")}</b>${escapeHtml(item)}</div>`)
-    .join("");
-  const inner = `${withPhoto ? bgImg(slide.image, slide.imagePosition) : ""}
-<div class="mesh" style="opacity:.05"></div><div class="g"></div>
-<div class="k">${escapeHtml(slide.kick || slide.kicker || "")}</div>
-<div class="handle">${escapeHtml(ctx.handle || "")}</div>
-<div class="h">${rich(slide.title, "hl")}</div>
-<div class="list">${items}</div>
-<div class="meta"><span>${escapeHtml(slide.metaLeft || "")}</span><span>${escapeHtml(slide.metaRight || "")}</span></div>`;
-  return page(css, inner);
+export function pageHtml({ cls, inner, vars, mode = "still", width = 1080, height = 1350, extraCss = "" }) {
+  const sized = width === 1080 && height === 1350 ? "" : `html,body{width:${width}px;height:${height}px}`;
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><style>${fontCss()}${CSS}${sized}${extraCss}</style></head><body class="${mode === "overlay" ? "overlay" : ""}"><div class="page ${cls}" style="${vars}">${inner}</div><script>${FIT}</script></body></html>`;
 }
 
 export function buildSlideHtml({ slide, episode, index, total, mode }) {
   const kind = slideKind(slide.role);
   const cover = coverStyle(slide, episode);
   const layout = slide.layout || (kind === "cover" ? "cover" : kind === "info" ? "info" : kind === "tips" ? "tips" : "bottom");
-  const withPhoto = mode !== "overlay";
+  const look = resolveLook(lookFor(episode), episode.accent);
+  const surface = surfaceFor(slide, layout, cover);
   const ctx = {
-    header: episode.header || episode.channel || "",
+    header: episode.header || "",
+    channel: episode.channel || episode.header || "",
     handle: episode.handle || "",
     credit: episode.credit || "",
     index,
     total,
     fileUrl,
+    mode,
+    cover,
   };
-  if (layout === "cover" || kind === "cover") {
-    if (cover === "B") return htmlCoverB(slide, ctx);
-    if (cover === "C") return htmlCoverC(slide, ctx, withPhoto);
-    return htmlCoverA(slide, ctx, withPhoto);
-  }
-  if (layout === "info") return htmlInfo(slide, ctx, withPhoto && Boolean(slide.image));
-  if (layout === "tips") return htmlTips(slide, ctx, withPhoto && Boolean(slide.image));
-  if (layout === "bottom") return htmlContent(slide, ctx, withPhoto);
-  const inner = layoutInner(layout, slide, ctx);
-  const solid = !needsPhoto(layout);
-  const css = `${layoutCss(layout)}${solid ? `body{background:${layout === "pullquote" || layout === "hanji" || layout === "inset" ? "#efe9dd" : "#0b0c0f"}}` : ""}`;
-  return page(css, inner);
-}
-
-export function isOpaqueCover(slide, episode) {
-  const layout = slide.layout || (slide.role === "cover" ? "cover" : "bottom");
-  if (layout === "cover") return coverStyle(slide, episode) === "B";
-  return isComposed(layout) || (!slide.image && !(slide.images || []).length);
-}
-
-export function buildReelHtml({ channel, lines }) {
-  const text = (lines || []).filter(Boolean).slice(0, 2).join("\n");
-  const css = `html,body{width:1080px;height:1920px}
-.gt{position:absolute;left:0;right:0;top:0;height:280px;background:linear-gradient(rgba(0,0,0,.45),transparent)}
-.gb{position:absolute;left:0;right:0;bottom:0;height:860px;background:linear-gradient(transparent,rgba(8,9,11,.5) 36%,rgba(8,9,11,.9))}
-.top{top:72px;font-size:20px}
-.box{position:absolute;left:64px;right:64px;top:130px}
-.rule{width:52px;height:4px;background:${JADE};margin-bottom:16px}
-.caption{font-weight:800;font-size:42px;line-height:1.25;letter-spacing:-.03em;white-space:pre-line}`;
-  const inner = `<div class="top"><span>${escapeHtml(channel || "")}</span></div>
-<div class="box"><div class="rule"></div><div class="caption">${escapeHtml(text)}</div></div>`;
-  return page(css, inner, { width: 1080, height: 1920 });
+  const { cls, inner } = buildLayout(layout, slide, ctx);
+  return pageHtml({ cls, inner, vars: surfaceVars(look, surface), mode });
 }
 
 export function validateEpisode(episode) {
   const errors = [];
   if (!episode?.slides?.length) errors.push("slides is empty");
+  if (episode.look && !LOOKS[String(episode.look).toLowerCase()]) {
+    errors.push(`look must be one of ${LOOK_NAMES.join(", ")}`);
+  }
   for (const [i, slide] of (episode.slides || []).entries()) {
     const n = i + 1;
     const layout = slide.layout || (slide.role === "cover" ? "cover" : "bottom");
-    const graphic = ["statement", "stat", "steps", "checklist", "compare", "timeline", "chart", "pullquote", "hanji", "info", "tips", "cover"].includes(layout);
-    if (!graphic && !slide.image && !slide.video && !(slide.images && slide.images.length)) {
-      errors.push(`slide ${n} needs image, images, or video`);
+    if (needsPhoto(layout) && !slide.image && !slide.video && !(slide.images && slide.images.length)) {
+      errors.push(`slide ${n} (${layout}) needs image, images, or video`);
     }
-    if (slideKind(slide.role) !== "info" && slideKind(slide.role) !== "tips" && !slide.title) {
+    if (layout === "grid" && (slide.images || []).length < 2) {
+      errors.push(`slide ${n} (grid) needs two or three images`);
+    }
+    if (!["info", "tips", "breather"].includes(layout) && !slide.title && !slide.stat) {
       errors.push(`slide ${n} needs a title`);
     }
     const cover = String(slide.cover || episode.cover || "A").toUpperCase();
@@ -332,8 +196,4 @@ export function validateEpisode(episode) {
     errors.push(`a finished episode has 10 slides, got ${(episode.slides || []).length}`);
   }
   return errors;
-}
-
-export function grainFile() {
-  return fs.existsSync(GRAIN) ? GRAIN : "";
 }

@@ -137,46 +137,15 @@ else
   fi
 fi
 
-FONT_DIR="$ROOT/assets/fonts"
-mkdir -p "$FONT_DIR"
-fetch_font() {
-  local file="$1"
-  local url="$2"
-  if [ -s "$FONT_DIR/$file" ]; then
-    return 0
-  fi
-  say "  받기  $file"
-  if curl -fL --retry 3 -o "$FONT_DIR/$file" "$url"; then
-    return 0
-  fi
-  say "  실패  $file"
-  FAIL=1
-  return 1
-}
-need_font=0
-for f in Pretendard-Light.woff2 Pretendard-Regular.woff2 Pretendard-Medium.woff2 Pretendard-SemiBold.woff2 Pretendard-Bold.woff2 Pretendard-ExtraBold.woff2 Pretendard-Black.woff2 noto-serif-kr-korean-700-normal.woff2; do
-  if [ ! -s "$FONT_DIR/$f" ]; then need_font=1; fi
-done
-if [ "$need_font" -eq 0 ]; then
-  say "  있음  Pretendard, Noto Serif KR (커버 B)"
-else
-  base="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/woff2"
-  for w in Light Regular Medium SemiBold Bold ExtraBold Black; do
-    fetch_font "Pretendard-${w}.woff2" "$base/Pretendard-${w}.woff2"
-  done
-  fetch_font "noto-serif-kr-korean-700-normal.woff2" \
-    "https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-kr@5.2.8/files/noto-serif-kr-korean-700-normal.woff2"
-  if [ ! -s "$FONT_DIR/OFL-Pretendard.txt" ]; then
-    fetch_font "OFL-Pretendard.txt" "https://cdn.jsdelivr.net/npm/pretendard@1.3.9/LICENSE" || true
-  fi
-  say "  됨    글꼴은 스킬 폴더에 있어요. 렌더는 이 파일을 써요."
+if have node; then
+  node "$ROOT/scripts/fetch-fonts.mjs" || FAIL=1
 fi
 
 if [ -d "$ROOT/node_modules/playwright" ]; then
   say "  있음  playwright 패키지"
 else
   if have npm; then
-    say "  설치  npm install (playwright)"
+    say "  설치  npm install"
     npm install || FAIL=1
   else
     say "  없음  npm"
@@ -184,20 +153,19 @@ else
   fi
 fi
 
-if [ -d "$ROOT/node_modules/remotion" ] && [ -d "$ROOT/node_modules/@remotion/cli" ]; then
-  say "  있음  remotion"
+# 릴스는 HyperFrames가 굽는다. node 22 이상에서만 돈다. 없으면 카드만 이어 붙인 릴스가 나온다.
+if [ -d "$ROOT/node_modules/hyperframes" ] && [ -d "$ROOT/node_modules/gsap" ]; then
+  say "  있음  hyperframes, gsap"
 else
   if have npm; then
-    say "  설치  npm install (remotion)"
+    say "  설치  npm install (hyperframes, gsap)"
     npm install || FAIL=1
   fi
 fi
-if [ -d "$ROOT/node_modules/remotion" ] && have node; then
-  say "  설치  npx remotion browser ensure"
-  if (cd "$ROOT" && npx remotion browser ensure); then
-    say "  있음  Remotion 브라우저"
-  else
-    say "  안내  Remotion 브라우저를 못 받았어요. 릴스는 ffmpeg로 만들어요."
+if have node; then
+  major="$(node -p "process.versions.node.split('.')[0]")"
+  if [ "$major" -lt 22 ]; then
+    say "  안내  node $major — 릴스 모션은 node 22 이상에서 돌아요. 카드와 클립은 그대로 만들어져요."
   fi
 fi
 

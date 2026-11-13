@@ -14,9 +14,25 @@
 | `data` | 표지, 숫자, 차트, 비교, 문장, 연표, 체크, 스플릿, 인용, 팁 |
 | `place` `space` | 표지, 스플릿, 숨 고르기, 연표, 사진, 그리드, 인용, 체크, 문장, 팁 |
 
+순서표의 판형이 그 장의 재료와 안 맞으면 렌더가 재료에 맞는 판형으로 바꾼다. 사진 판형 자리인데 사진이 없으면 글자 판형이 된다.
+
+## 룩
+
+갈래마다 어울리는 룩이 있다. `node scripts/next-theme.mjs --look 갈래`가 하나씩 돌린다. 값과 고르는 법은 [design.md](design.md).
+
+| kind | 룩 순서 |
+|---|---|
+| `news` | press, swiss, night |
+| `howto` | swiss, pop, press |
+| `list` | pop, swiss, press |
+| `comparison` | swiss, press, night |
+| `story` | press, hanji, night |
+| `data` | swiss, night, press |
+| `place` | hanji, press, night |
+
 ## 표지
 
-A 큰 글자, B 한지, C 체크 세 줄. `node scripts/next-theme.mjs`.
+A 사진과 큰 제목, B 제목 아래 액자 사진, C 글자와 세 줄 목록. `node scripts/next-theme.mjs`.
 
 ## 갈래별 재료
 

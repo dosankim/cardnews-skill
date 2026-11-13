@@ -8,6 +8,8 @@
  *   node scripts/render-episode.mjs episode.json --audio bed.m4a
  *   node scripts/render-episode.mjs episode.json --tts
  *   node scripts/render-episode.mjs episode.json --preview-themes
+ *   node scripts/render-episode.mjs episode.json --preview-looks
+ *   node scripts/render-episode.mjs episode.json --look swiss
  */
 import fs from "node:fs";
 import os from "node:os";
@@ -17,26 +19,25 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import {
   applyLayouts,
-  buildReelHtml,
   buildSlideHtml,
-  isOpaqueCover,
   listThemes,
+  lookFor,
   slideKind,
   validateEpisode,
 } from "./lib/html.mjs";
+import { LOOKS, contrast, resolveLook } from "./lib/looks.mjs";
 import {
   assertFrame,
+  composeWindow,
   concatVideos,
   cutVideo,
-  grainStill,
   have,
   holdStill,
   mixAudio,
-  overlayPng,
   padCard,
   photoMotion,
 } from "./lib/ffmpeg.mjs";
-import { remotionAvailable, renderRemotionReel } from "./render-reel.mjs";
+import { hyperframesAvailable, renderHyperframesReel } from "./render-reel.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -51,7 +52,7 @@ function hasFlag(flag) {
 }
 
 function usage() {
-  console.log(`usage: node scripts/render-episode.mjs <episode.json> [--stills-only] [--no-reel] [--preview-themes] [--crf 19] [--preset fast] [--audio file] [--tts] [--allow-short]`);
+  console.log(`usage: node scripts/render-episode.mjs <episode.json> [--look press|swiss|hanji|night|pop] [--stills-only] [--no-reel] [--reel-only] [--preview-themes] [--preview-looks] [--draft] [--ffmpeg-reel] [--crf 19] [--preset fast] [--audio file] [--tts] [--allow-short]`);
 }
 
 async function renderContact(page, items, output) {
@@ -74,7 +75,7 @@ async function renderContact(page, items, output) {
     *{box-sizing:border-box;margin:0} body{width:${width}px;height:${height}px;background:#121316;overflow:hidden}
     .grid{display:grid;grid-template-columns:repeat(${cols},${tw}px);gap:${pad}px;padding:${pad}px}
     img{width:${tw}px;height:${th}px;object-fit:cover;display:block;background:#000}
-    figcaption{color:#8FE8D6;font-weight:700;font-size:22px;letter-spacing:-.02em;padding-top:12px;font-family:sans-serif}
+    figcaption{color:#b9b6ad;font-weight:600;font-size:20px;letter-spacing:-.01em;padding-top:12px;font-family:sans-serif}
   </style></head><body><div class="grid">${cells}</div></body></html>`;
   await shoot(page, html, output, { width, height });
 }
@@ -88,12 +89,17 @@ async function shoot(page, html, file, { width, height, omitBackground }) {
     await page.setViewportSize({ width, height });
     await page.goto(pathToFileURL(tmp).href, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
+    const report = await page
+      .waitForFunction(() => window.__report, null, { timeout: 4000 })
+      .then((handle) => handle.jsonValue())
+      .catch(() => ({ issues: [], wins: [] }));
     await page.screenshot({
       path: file,
       type: "png",
       omitBackground: Boolean(omitBackground),
       clip: { x: 0, y: 0, width, height },
     });
+    return report;
   } finally {
     fs.rmSync(tmp, { force: true });
   }
@@ -131,9 +137,14 @@ function slideBase(index, slide) {
   return `${String(index).padStart(2, "0")}_${slug}`;
 }
 
+function report(index, issues) {
+  for (const issue of issues || []) console.warn(`  ! ${String(index).padStart(2, "0")}장: ${issue}`);
+  return (issues || []).length;
+}
+
 async function renderThemes(page, episode, outDir) {
   fs.mkdirSync(outDir, { recursive: true });
-  const slide = { ...episode.slides[0], role: "cover", image: absImage(episode, episode.slides[0]) };
+  const slide = { ...episode.slides[0], role: "cover", layout: "cover", image: absImage(episode, episode.slides[0]) };
   const total = episode.slides.length;
   for (const cover of listThemes()) {
     const variant = slide.variants?.[cover] || {};
@@ -145,12 +156,26 @@ async function renderThemes(page, episode, outDir) {
       mode: "still",
     });
     const file = path.join(outDir, `cover_${cover}.png`);
-    await shoot(page, html, file, { width: 1080, height: 1350 });
-    const tmp = `${file}.grain.png`;
-    grainStill({ input: file, output: tmp });
-    fs.renameSync(tmp, file);
-    assertPng(file);
+    const result = await shoot(page, html, file, { width: 1080, height: 1350 });
+    report(1, result.issues);
+    assertFrame(file, 1080, 1350);
     console.log(`cover ${cover} → ${file}`);
+  }
+}
+
+/** 표지 한 장을 룩마다 그린다. 룩을 고를 때 본다. */
+async function renderLooks(page, episode, outDir) {
+  fs.mkdirSync(outDir, { recursive: true });
+  const total = episode.slides.length;
+  const picks = [0, Math.min(2, total - 1), Math.min(3, total - 1)];
+  for (const look of Object.keys(LOOKS)) {
+    for (const i of [...new Set(picks)]) {
+      const slide = { ...episode.slides[i], image: absImage(episode, episode.slides[i]), images: (episode.slides[i].images || []).map((item) => absMedia(episode, item)) };
+      const html = buildSlideHtml({ slide, episode: { ...episode, look }, index: i + 1, total, mode: "still" });
+      const file = path.join(outDir, `${look}_${String(i + 1).padStart(2, "0")}.png`);
+      await shoot(page, html, file, { width: 1080, height: 1350 });
+    }
+    console.log(`look ${look} (${LOOKS[look].label}) → ${outDir}`);
   }
 }
 
@@ -164,13 +189,13 @@ function absMedia(episode, value) {
   return path.resolve(path.dirname(episode._file), value);
 }
 
-function assertPng(file) {
-  const info = assertFrame(file, 1080, 1350);
-  return info;
+function even(n) {
+  const v = Math.max(2, Math.round(n));
+  return v % 2 ? v + 1 : v;
 }
 
 async function main() {
-  const valued = new Set(["--crf", "--preset", "--audio", "--narration-audio"]);
+  const valued = new Set(["--crf", "--preset", "--audio", "--narration-audio", "--look"]);
   const args = process.argv.slice(2);
   let jsonPath;
   for (let i = 0; i < args.length; i += 1) {
@@ -189,11 +214,14 @@ async function main() {
   const episodePath = path.resolve(jsonPath);
   const episode = JSON.parse(fs.readFileSync(episodePath, "utf8"));
   episode._file = episodePath;
+  if (argValue("--look")) episode.look = argValue("--look");
   applyLayouts(episode);
   const strict = !hasFlag("--allow-short");
+  const preview = hasFlag("--preview-themes");
+  const previewLooks = hasFlag("--preview-looks");
   const errors = validateEpisode(episode).filter((error) => {
     if (!error.startsWith("a finished episode")) return true;
-    return strict && !hasFlag("--preview-themes");
+    return strict && !preview && !previewLooks;
   });
   if (errors.length) {
     console.error(errors.map((error) => `- ${error}`).join("\n"));
@@ -206,10 +234,15 @@ async function main() {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), "cardnews-"));
   const crf = Number(argValue("--crf") || 19);
   const preset = argValue("--preset") || "fast";
-  const channel = episode.header || episode.handle || episode.channel || "";
   const total = episode.slides.length;
   const stillsOnly = hasFlag("--stills-only");
-  const preview = hasFlag("--preview-themes");
+  const lookId = lookFor(episode);
+  const look = resolveLook(lookId, episode.accent);
+  console.log(`look ${lookId} (${LOOKS[lookId].label})`);
+  if (episode.accent) {
+    const ratio = contrast(look.surfaces.base.accent, look.surfaces.base.bg);
+    if (ratio < 3) console.warn(`  ! accent ${episode.accent} 는 이 룩의 바탕과 명도 차이가 작아요(${ratio.toFixed(1)}:1). 3:1 이상인 색을 고르세요.`);
+  }
 
   if (!have("ffmpeg") || !have("ffprobe")) {
     throw new Error("ffmpeg and ffprobe are required. run scripts/setup.sh");
@@ -230,8 +263,13 @@ async function main() {
       await renderThemes(page, episode, path.join(outDir, "theme-previews"));
       return;
     }
+    if (previewLooks) {
+      await renderLooks(page, episode, path.join(outDir, "look-previews"));
+      return;
+    }
 
     const motions = [];
+    let problems = 0;
     for (let i = 0; i < episode.slides.length; i += 1) {
       const slide = episode.slides[i];
       const index = i + 1;
@@ -250,16 +288,15 @@ async function main() {
         if (!fs.existsSync(png)) throw new Error(`--reel-only needs ${png}`);
         continue;
       }
-      const rawPng = path.join(work, `${baseName}-raw.png`);
-      await shoot(
+      const still = await shoot(
         page,
         buildSlideHtml({ slide: prepared, episode, index, total, mode: "still" }),
-        rawPng,
+        png,
         { width: 1080, height: 1350 },
       );
-      grainStill({ input: rawPng, output: png });
-      assertPng(png);
-      console.log(`still ${index} → ${path.relative(process.cwd(), png)}`);
+      assertFrame(png, 1080, 1350);
+      console.log(`still ${index} ${slide.layout} → ${path.relative(process.cwd(), png)}`);
+      problems += report(index, still.issues);
 
       if (stillsOnly) continue;
 
@@ -268,10 +305,13 @@ async function main() {
         console.warn(`slide ${index} is ${seconds}s. carousel clips should be 7–9s.`);
       }
       const mp4 = path.join(outDir, `${baseName}.mp4`);
-      if (isOpaqueCover(prepared, episode) || (!image && !video)) {
+      const windows = still.wins || [];
+      const moving = windows.length === 1 && (image || video);
+      if (!moving) {
         holdStill({ image: png, output: mp4, seconds, crf, preset });
         motions.push({ index, name: baseName, motion: "still" });
       } else {
+        // 사진 창만 비운 PNG를 위에 얹고, 그 창 크기로 만든 영상을 아래에 깐다.
         const overlay = path.join(work, `overlay-${index}.png`);
         await shoot(
           page,
@@ -279,31 +319,18 @@ async function main() {
           overlay,
           { width: 1080, height: 1350, omitBackground: true },
         );
+        const rect = windows[0];
+        const w = even(rect.w);
+        const h = even(rect.h);
         const base = path.join(work, `base-${index}.mp4`);
         const motion = slideMotion(slide, i);
         if (video) {
-          cutVideo({
-            input: video,
-            output: base,
-            width: 1080,
-            height: 1350,
-            seconds,
-            start: slide.videoStart || 0,
-            crf,
-          });
+          cutVideo({ input: video, output: base, width: w, height: h, seconds, start: slide.videoStart || 0, crf });
         } else {
-          photoMotion({
-            input: image,
-            output: base,
-            width: 1080,
-            height: 1350,
-            seconds,
-            motion,
-            crf,
-          });
+          photoMotion({ input: image, output: base, width: w, height: h, seconds, motion, crf });
           motions.push({ index, name: baseName, motion });
         }
-        overlayPng({ video: base, png: overlay, output: mp4, crf, grain: true, preset });
+        composeWindow({ video: base, png: overlay, output: mp4, x: rect.x, y: rect.y, seconds, crf, preset });
       }
       const info = assertFrame(mp4, 1080, 1350);
       console.log(`clip ${index} ${info.duration.toFixed(2)}s SAR ${info.sar}`);
@@ -312,8 +339,8 @@ async function main() {
     if (motions.length && !stillsOnly) {
       const note = path.join(outDir, "영상메모.txt");
       const lines = [
-        "공식 영상이 없는 장은 공식(또는 사용 가능한) 스틸에 느린 카메라 무브를 넣었어요.",
-        ...motions.map((item) => `- ${item.name}: ${item.motion === "still" ? "정지 표지" : `느린 카메라 (${item.motion})`}`),
+        "공식 영상이 없는 장은 스틸 사진에 느린 카메라 무브를 넣었어요. 글은 움직이지 않아요.",
+        ...motions.map((item) => `- ${item.name}: ${item.motion === "still" ? "정지" : `느린 카메라 (${item.motion})`}`),
         "",
       ];
       fs.writeFileSync(note, lines.join("\n"));
@@ -328,12 +355,15 @@ async function main() {
         return {
           file: `${base}.png`,
           label: path.basename(fs.existsSync(videoFile) && !stillsOnly ? videoFile : `${base}.png`),
-          kind: fs.existsSync(videoFile) && !stillsOnly ? "VIDEO" : "STILL",
+          kind: slide.layout || "",
         };
       }),
       sheet,
     );
     if (page) console.log(`contact → ${path.relative(process.cwd(), sheet)}`);
+    if (problems) {
+      console.warn(`\n검수에서 ${problems}건이 걸렸어요. 위 줄을 보고 문장을 줄이거나 판형을 바꾼 뒤 다시 그리세요.`);
+    }
 
     writeText(outDir, "기획서.md", episode.plan);
     writeText(outDir, "게시글문구.txt", episode.caption);
@@ -341,82 +371,51 @@ async function main() {
     writeText(outDir, "나레이션대본.txt", episode.narration);
 
     if (!stillsOnly && !hasFlag("--no-reel")) {
+      if (browser && !browserClosed) {
+        await browser.close();
+        browserClosed = true;
+      }
       const audio = argValue("--audio");
       let narrationAudio = argValue("--narration-audio");
       if (hasFlag("--tts")) {
         narrationAudio = await synthesizeNarration(outDir, episode.narration || "");
       }
-      let usedRemotion = false;
-      if (!hasFlag("--ffmpeg-reel") && remotionAvailable()) {
-        if (browser && !browserClosed) {
-          await browser.close();
-          browserClosed = true;
-        }
+      let done = false;
+      if (!hasFlag("--ffmpeg-reel") && hyperframesAvailable()) {
         try {
-          const reel = renderRemotionReel({ episode, outDir, crf, audio, narration: narrationAudio });
+          const reel = await renderHyperframesReel({ episode, outDir, look, audio, narration: narrationAudio, draft: hasFlag("--draft"), keep: hasFlag("--keep-reel") });
           const info = assertFrame(reel, 1080, 1920);
-          console.log(`reel remotion ${info.duration.toFixed(2)}s ${(info.size / 1e6).toFixed(2)}MB → ${reel}`);
-          usedRemotion = true;
+          console.log(`reel ${info.duration.toFixed(2)}s ${(info.size / 1e6).toFixed(2)}MB → ${reel}`);
+          if (info.duration < 18 || info.duration > 32) console.warn(`reel is ${info.duration.toFixed(1)}s. aim for about 20–30s.`);
+          done = true;
         } catch (error) {
-          console.warn(`Remotion 릴스를 못 그렸어요. ffmpeg로 넘겨요.\n${error.message}`);
+          console.warn(`HyperFrames 릴스를 못 그렸어요. 카드만 이어 붙인 릴스로 넘겨요.\n${error.message}`);
         }
       } else if (!hasFlag("--ffmpeg-reel")) {
-        console.warn("Remotion이 없어요. ffmpeg 릴스로 만들어요. bash scripts/setup.sh");
+        console.warn("HyperFrames가 없어요. 카드만 이어 붙인 릴스로 만들어요. bash scripts/setup.sh");
       }
-      if (usedRemotion) {
-        /* motion reel already written */
-      } else {
-      const beats = episode.reel?.beats?.length ? episode.reel.beats : autoBeats(episode.slides);
-      const parts = [];
-      let cursor = 0;
-      for (let i = 0; i < beats.length; i += 1) {
-        const beat = beats[i];
-        const slide = episode.slides[(beat.slide || 1) - 1];
-        if (!slide) throw new Error(`reel beat ${i + 1} points at missing slide ${beat.slide}`);
-        const seconds = Number(beat.seconds || 3.2);
-        cursor += seconds;
-        const cardPng = path.join(outDir, `${slideBase(beat.slide || 1, slide)}.png`);
-        const reelBase = path.join(work, `reel-base-${i}.mp4`);
-        padCard({
-          image: cardPng,
-          output: reelBase,
-          seconds,
-          crf,
-          preset,
+      if (!done) {
+        const beats = episode.reel?.beats?.length ? episode.reel.beats : autoBeats(episode.slides);
+        const pad = look.surfaces.base.bg.replace("#", "0x");
+        const parts = [];
+        beats.forEach((beat, i) => {
+          const slide = episode.slides[(beat.slide || 1) - 1];
+          if (!slide) throw new Error(`reel beat ${i + 1} points at missing slide ${beat.slide}`);
+          const cardPng = path.join(outDir, `${slideBase(beat.slide || 1, slide)}.png`);
+          const part = path.join(work, `reel-part-${i}.mp4`);
+          padCard({ image: cardPng, output: part, seconds: Number(beat.seconds || 3.2), crf, preset, color: pad });
+          parts.push(part);
         });
-        const reelOverlay = path.join(work, `reel-overlay-${i}.png`);
-        if (!page) throw new Error("ffmpeg reel needs the browser. Re-run without --reel-only.");
-        await page.setViewportSize({ width: 1080, height: 1920 });
-        await shoot(
-          page,
-          buildReelHtml({
-            channel,
-            lines: beat.lines,
-          }),
-          reelOverlay,
-          { width: 1080, height: 1920, omitBackground: true },
-        );
-        const part = path.join(work, `reel-part-${i}.mp4`);
-        overlayPng({ video: reelBase, png: reelOverlay, output: part, crf });
-        assertFrame(part, 1080, 1920);
-        parts.push(part);
-      }
-      let reel = path.join(outDir, "reel.mp4");
-      concatVideos({ files: parts, output: reel });
-      if (audio || narrationAudio) {
-        const mixed = path.join(work, "reel-audio.mp4");
-        if (audio && narrationAudio) {
-          mixAudio({ video: reel, audio: narrationAudio, output: mixed, duck: audio });
-        } else {
-          mixAudio({ video: reel, audio: audio || narrationAudio, output: mixed });
+        const reel = path.join(outDir, "reel.mp4");
+        concatVideos({ files: parts, output: reel });
+        if (audio || narrationAudio) {
+          const mixed = path.join(work, "reel-audio.mp4");
+          if (audio && narrationAudio) mixAudio({ video: reel, audio: narrationAudio, output: mixed, duck: audio });
+          else mixAudio({ video: reel, audio: audio || narrationAudio, output: mixed });
+          fs.copyFileSync(mixed, reel);
         }
-        fs.copyFileSync(mixed, reel);
-      }
-      const info = assertFrame(reel, 1080, 1920);
-      console.log(`reel ${info.duration.toFixed(2)}s ${(info.size / 1e6).toFixed(2)}MB → ${reel}`);
-      if (cursor < 20 || cursor > 30) {
-        console.warn(`reel is ${cursor.toFixed(1)}s. aim for about 20–30s.`);
-      }
+        const info = assertFrame(reel, 1080, 1920);
+        console.log(`reel (ffmpeg) ${info.duration.toFixed(2)}s ${(info.size / 1e6).toFixed(2)}MB → ${reel}`);
       }
     }
   } finally {
