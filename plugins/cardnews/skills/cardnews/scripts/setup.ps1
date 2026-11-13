@@ -133,45 +133,9 @@ if (Have "yt-dlp") {
   }
 }
 
-$fontDir = Join-Path $Root "assets\fonts"
-New-Item -ItemType Directory -Force -Path $fontDir | Out-Null
-$fonts = @(
-  "Pretendard-Light.woff2",
-  "Pretendard-Regular.woff2",
-  "Pretendard-Medium.woff2",
-  "Pretendard-SemiBold.woff2",
-  "Pretendard-Bold.woff2",
-  "Pretendard-ExtraBold.woff2",
-  "Pretendard-Black.woff2"
-)
-$base = "https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/woff2"
-$missingFont = $false
-foreach ($name in $fonts) {
-  $file = Join-Path $fontDir $name
-  if (-not (Test-Path $file) -or (Get-Item $file).Length -eq 0) { $missingFont = $true }
-}
-$serif = Join-Path $fontDir "noto-serif-kr-korean-700-normal.woff2"
-if (-not (Test-Path $serif) -or (Get-Item $serif).Length -eq 0) { $missingFont = $true }
-if (-not $missingFont) {
-  Say "  있음  Pretendard, Noto Serif KR (커버 B)"
-} else {
-  foreach ($name in $fonts) {
-    $file = Join-Path $fontDir $name
-    if ((Test-Path $file) -and (Get-Item $file).Length -gt 0) { continue }
-    Say "  받기  $name"
-    try { Invoke-WebRequest -Uri "$base/$name" -OutFile $file } catch { Say "  실패  $name"; $Fail = $true }
-  }
-  if (-not (Test-Path $serif) -or (Get-Item $serif).Length -eq 0) {
-    Say "  받기  noto-serif-kr-korean-700-normal.woff2"
-    try {
-      Invoke-WebRequest -Uri "https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-kr@5.2.8/files/noto-serif-kr-korean-700-normal.woff2" -OutFile $serif
-    } catch { Say "  실패  Noto Serif KR"; $Fail = $true }
-  }
-  $ofl = Join-Path $fontDir "OFL-Pretendard.txt"
-  if (-not (Test-Path $ofl)) {
-    try { Invoke-WebRequest -Uri "https://cdn.jsdelivr.net/npm/pretendard@1.3.9/LICENSE" -OutFile $ofl } catch { }
-  }
-  Say "  됨    글꼴은 스킬 폴더에 있어요. 렌더는 이 파일을 써요."
+if (Have "node") {
+  & node (Join-Path $Root "scripts\fetch-fonts.mjs") | Out-Host
+  if ($LASTEXITCODE -ne 0) { $Fail = $true }
 }
 
 if (Test-Path (Join-Path $Root "node_modules\playwright")) {
@@ -185,17 +149,17 @@ if (Test-Path (Join-Path $Root "node_modules\playwright")) {
   $Fail = $true
 }
 
-if ((Test-Path (Join-Path $Root "node_modules\remotion")) -and (Test-Path (Join-Path $Root "node_modules\@remotion\cli"))) {
-  Say "  있음  remotion"
-} elseif (Have "npm") {
-  Say "  설치  npm install (remotion)"
+# 릴스는 HyperFrames가 굽는다. node 22 이상에서만 돈다. 없으면 카드만 이어 붙인 릴스가 나온다.
+if ((Test-Path (Join-Path $Root "node_modules\hyperframes")) -and (Test-Path (Join-Path $Root "node_modules\gsap"))) {
+  Say "  있음  hyperframes, gsap"
+} else {
+  Say "  설치  npm install (hyperframes, gsap)"
   & npm install *>&1 | Out-Host
   if ($LASTEXITCODE -ne 0) { $Fail = $true }
 }
-if ((Test-Path (Join-Path $Root "node_modules\remotion")) -and (Have "node")) {
-  Say "  설치  npx remotion browser ensure"
-  & npx remotion browser ensure *>&1 | Out-Host
-  if ($LASTEXITCODE -eq 0) { Say "  있음  Remotion 브라우저" } else { Say "  안내  Remotion 브라우저를 못 받았어요. 릴스는 ffmpeg로 만들어요." }
+if (Have "node") {
+  $nodeMajor = [int]((& node -p "process.versions.node.split('.')[0]"))
+  if ($nodeMajor -lt 22) { Say "  안내  node $nodeMajor — 릴스 모션은 node 22 이상에서 돌아요. 카드와 클립은 그대로 만들어져요." }
 }
 
 if ((Test-Path (Join-Path $Root "node_modules\playwright")) -and (Have "node")) {

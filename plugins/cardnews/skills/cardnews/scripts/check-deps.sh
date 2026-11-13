@@ -52,13 +52,16 @@ else
   ok=1
 fi
 
-font="$ROOT/assets/fonts/Pretendard-Regular.woff2"
-serif="$ROOT/assets/fonts/noto-serif-kr-korean-700-normal.woff2"
-if [ -f "$font" ] && [ -f "$serif" ]; then
-  printf '  ok   Pretendard, Noto Serif KR\n'
+if command -v node >/dev/null 2>&1 && node "$ROOT/scripts/fetch-fonts.mjs" --check >/dev/null 2>&1; then
+  printf '  ok   글꼴 (Pretendard, Noto Serif KR, 고운바탕, 검은고딕, 숫자용 라틴)\n'
 else
-  printf '  missing  글꼴 파일 — assets/fonts 를 확인해요\n'
+  printf '  missing  글꼴 파일 — node scripts/fetch-fonts.mjs 를 실행해요\n'
   ok=1
+fi
+if [ -d "$ROOT/node_modules/hyperframes" ] && [ -d "$ROOT/node_modules/gsap" ]; then
+  printf '  ok   hyperframes (릴스 모션)\n'
+else
+  printf '  note hyperframes 없음 — 릴스는 카드만 이어 붙여요. npm install\n'
 fi
 
 if [ -d "$ROOT/node_modules/playwright" ]; then

@@ -5,3 +5,6 @@ node_modules/
 *.zip
 examples/**/media/src/
 plugins/cardnews/skills/cardnews/remotion/public/
+examples/**/look-previews/
+reel-src/
+.hyperframes/

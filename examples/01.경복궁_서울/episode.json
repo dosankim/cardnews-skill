@@ -1,9 +1,9 @@
 {
   "title": "경복궁",
-  "place": "서울",
   "kind": "place",
+  "look": "hanji",
   "cover": "A",
-  "header": "GYEONGBOKGUNG — SEOUL",
+  "place": "서울",
   "channel": "공간노트",
   "handle": "@your_channel",
   "credit": "사진: 위키미디어 공용 · 문화재청",
@@ -47,7 +47,7 @@
     {
       "role": "content",
       "slug": "about",
-      "kicker": "ABOUT",
+      "kicker": "처음 지은 해",
       "title": "1395년에 세운\n조선의 법궁이에요",
       "body": "태조 4년에 지었어요. 임진왜란 때 불탄 뒤, 1867년에 다시 세운 궁이에요.",
       "image": "media/02-geunjeongjeon.jpg",
@@ -161,7 +161,7 @@
     {
       "role": "info",
       "slug": "info",
-      "kicker": "VISIT INFO",
+      "kicker": "가기 전에",
       "title": "관람 정보",
       "image": "",
       "imagePosition": "center 30%",
@@ -194,7 +194,7 @@
     {
       "role": "tips",
       "slug": "tips",
-      "kicker": "TICKET & TIP",
+      "kicker": "요금과 팁",
       "price": "3,000원",
       "priceNote": "대인 관람료",
       "image": "media/09-roof.jpg",
@@ -220,7 +220,6 @@
         }
       ],
       "cta": "저장해 두고 가기 전에 봐요",
-      "ctaMark": "SAVE ↗",
       "layout": "tips"
     }
   ],

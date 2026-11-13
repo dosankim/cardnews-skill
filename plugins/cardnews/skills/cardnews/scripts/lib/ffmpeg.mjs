@@ -181,7 +181,44 @@ export function overlayPng({ video, png, output, crf, grain = true, preset = "fa
   ]);
 }
 
-export function padCard({ image, output, seconds, crf, preset = "fast" }) {
+/** 사진 창 크기로 만든 영상을 (x,y)에 깔고, 창만 뚫린 PNG를 위에 얹는다. */
+export function composeWindow({ video, png, output, x, y, seconds, crf, preset = "fast" }) {
+  run("ffmpeg", [
+    "-y",
+    "-f",
+    "lavfi",
+    "-i",
+    `color=c=black:s=1080x1350:r=30:d=${seconds}`,
+    "-i",
+    video,
+    "-i",
+    png,
+    "-filter_complex",
+    `[0:v][1:v]overlay=${x}:${y}:shortest=1[b];[b][2:v]overlay=0:0:format=auto,setsar=1,format=yuv420p[out]`,
+    "-map",
+    "[out]",
+    "-t",
+    String(seconds),
+    "-an",
+    "-c:v",
+    "libx264",
+    "-preset",
+    preset,
+    "-crf",
+    String(crf),
+    "-profile:v",
+    "high",
+    "-pix_fmt",
+    "yuv420p",
+    "-color_range",
+    "tv",
+    "-movflags",
+    "+faststart",
+    output,
+  ]);
+}
+
+export function padCard({ image, output, seconds, crf, preset = "fast", color = "0x0b0c0f" }) {
   run("ffmpeg", [
     "-y",
     "-loop",
@@ -191,7 +228,7 @@ export function padCard({ image, output, seconds, crf, preset = "fast" }) {
     "-t",
     String(seconds),
     "-vf",
-    "scale=1080:1350,pad=1080:1920:0:420:color=0x0b0c0f,setsar=1,fps=30,format=yuv420p",
+    `scale=1080:1350,pad=1080:1920:0:285:color=${color},setsar=1,fps=30,format=yuv420p`,
     "-an",
     "-c:v",
     "libx264",
@@ -217,7 +254,7 @@ export function holdStill({ image, output, seconds, crf, preset = "fast" }) {
     "-t",
     String(seconds),
     "-vf",
-    "scale=1080:1350:out_range=tv,setsar=1,fps=30,eq=contrast=1.04:saturation=0.96,noise=alls=7:allf=t,format=yuv420p",
+    "scale=1080:1350:out_range=tv,setsar=1,fps=30,format=yuv420p",
     "-an",
     "-c:v",
     "libx264",

@@ -1,21 +1,22 @@
 {
   "name": "cardnews",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "description": "한국어 인스타 카드뉴스 렌더러. HTML/CSS를 헤드리스 크로미움으로 그립니다.",
+  "description": "한국어 인스타 카드뉴스 렌더러. 카드는 HTML/CSS를 헤드리스 크로미움으로, 릴스는 같은 HTML을 HyperFrames로 그립니다.",
   "scripts": {
     "setup": "bash scripts/setup.sh",
     "check": "bash scripts/check-deps.sh",
     "render": "node scripts/render-episode.mjs",
-    "self-check": "node scripts/self-check.mjs"
+    "self-check": "node scripts/self-check.mjs",
+    "fonts": "node scripts/fetch-fonts.mjs"
   },
   "dependencies": {
-    "@remotion/cli": "^4.0.543",
-    "@remotion/transitions": "^4.0.543",
-    "playwright": "^1.56.0",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "remotion": "^4.0.543"
+    "gsap": "^3.15.1",
+    "hyperframes": "0.9.41",
+    "playwright": "^1.56.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
