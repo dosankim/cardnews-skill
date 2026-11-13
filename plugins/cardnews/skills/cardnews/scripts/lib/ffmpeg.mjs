@@ -2,6 +2,28 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
+// 윈도우에서 winget이나 setup.sh가 방금 깐 ffmpeg가 이 프로세스에서도 보이게 PATH 앞에 붙인다.
+if (process.platform === "win32") {
+  const local = process.env.LOCALAPPDATA || path.join(process.env.USERPROFILE || "", "AppData", "Local");
+  const extra = [
+    path.join(process.env.USERPROFILE || "", ".local", "bin"),
+    path.join(local, "Microsoft", "WinGet", "Links"),
+  ];
+  const pkgs = path.join(local, "Microsoft", "WinGet", "Packages");
+  try {
+    for (const d of fs.readdirSync(pkgs)) {
+      if (!d.startsWith("Gyan.FFmpeg")) continue;
+      for (const sub of fs.readdirSync(path.join(pkgs, d))) {
+        const bin = path.join(pkgs, d, sub, "bin");
+        if (sub.startsWith("ffmpeg") && fs.existsSync(bin)) extra.push(bin);
+      }
+    }
+  } catch {}
+  const key = Object.keys(process.env).find((k) => k.toLowerCase() === "path") || "PATH";
+  const cur = (process.env[key] || "").split(path.delimiter);
+  process.env[key] = [...extra.filter((d) => d && fs.existsSync(d) && !cur.includes(d)), ...cur].join(path.delimiter);
+}
+
 function run(bin, args) {
   const result = spawnSync(bin, args, { encoding: "utf8" });
   if (result.error) {
@@ -15,6 +37,10 @@ function run(bin, args) {
 }
 
 export function have(bin) {
+  if (process.platform === "win32") {
+    const r = spawnSync(bin, ["--help"], { encoding: "utf8", windowsHide: true });
+    return !r.error;
+  }
   const result = spawnSync("bash", ["-lc", `command -v ${bin}`], { encoding: "utf8" });
   return result.status === 0 && Boolean(result.stdout.trim());
 }
@@ -79,6 +105,8 @@ export function photoMotion({ input, output, width, height, seconds, motion, crf
     String(crf),
     "-pix_fmt",
     "yuv420p",
+    "-color_range",
+    "tv",
     "-movflags",
     "+faststart",
     output,
@@ -105,6 +133,8 @@ export function cutVideo({ input, output, width, height, seconds, start, crf }) 
     String(crf),
     "-pix_fmt",
     "yuv420p",
+    "-color_range",
+    "tv",
     "-movflags",
     "+faststart",
     output,
@@ -137,6 +167,8 @@ export function overlayPng({ video, png, output, crf, grain = true, preset = "fa
     "high",
     "-pix_fmt",
     "yuv420p",
+    "-color_range",
+    "tv",
     "-movflags",
     "+faststart",
     output,
@@ -153,7 +185,7 @@ export function holdStill({ image, output, seconds, crf, preset = "fast" }) {
     "-t",
     String(seconds),
     "-vf",
-    "scale=1080:1350,setsar=1,fps=30,eq=contrast=1.04:saturation=0.96,noise=alls=7:allf=t,format=yuv420p",
+    "scale=1080:1350:out_range=tv,setsar=1,fps=30,eq=contrast=1.04:saturation=0.96,noise=alls=7:allf=t,format=yuv420p",
     "-an",
     "-c:v",
     "libx264",
@@ -165,6 +197,8 @@ export function holdStill({ image, output, seconds, crf, preset = "fast" }) {
     "high",
     "-pix_fmt",
     "yuv420p",
+    "-color_range",
+    "tv",
     "-movflags",
     "+faststart",
     output,

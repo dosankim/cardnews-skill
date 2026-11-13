@@ -2,6 +2,7 @@
 # Report whether this machine can render card news.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+. "$ROOT/scripts/env.sh"
 ok=0
 warn=0
 
@@ -30,7 +31,7 @@ if command -v node >/dev/null 2>&1; then
     ok=1
   fi
 else
-  printf '  missing  node — https://nodejs.org 에서 20 이상을 설치해요\n'
+  printf '  missing  node — bash scripts/setup.sh 를 실행하거나 https://nodejs.org 에서 20 이상을 설치해요\n'
   ok=1
 fi
 
@@ -52,9 +53,9 @@ else
 fi
 
 font="$ROOT/assets/fonts/Pretendard-Regular.woff2"
-serif="$ROOT/assets/fonts/gowun-batang-korean-700-normal.woff2"
+serif="$ROOT/assets/fonts/noto-serif-kr-korean-700-normal.woff2"
 if [ -f "$font" ] && [ -f "$serif" ]; then
-  printf '  ok   Pretendard, 고운바탕\n'
+  printf '  ok   Pretendard, Noto Serif KR\n'
 else
   printf '  missing  글꼴 파일 — assets/fonts 를 확인해요\n'
   ok=1

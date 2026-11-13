@@ -22,6 +22,14 @@ bash scripts/setup.sh
 - Playwright로 헤드리스 Chromium
 - Pretendard, 커버 B용 Noto Serif KR (스킬 폴더의 글꼴 파일)
 
+윈도우에서는 Claude Code가 쓰는 Git Bash에서 같은 명령을 실행하면 winget으로 없는 것만 넣어요. 관리자 확인 창이 뜨면 "예"를 누르면 돼요.
+
+- `winget install OpenJS.NodeJS.LTS` (node가 없을 때)
+- `winget install Gyan.FFmpeg` (ffprobe 포함)
+- yt-dlp는 `yt-dlp.exe`를 `~/.local/bin`에 받아요
+
+winget으로 방금 깐 프로그램은 같은 창에서 바로 안 보일 수 있어서, 스크립트들이 winget 설치 폴더를 PATH 앞에 붙여요. 그래도 안 보이면 Claude Code를 다시 켜요.
+
 Node 20이 없으면 맥에서는 `brew install node`를 시도해요. 리눅스는 ffmpeg·yt-dlp가 없고 sudo가 비밀번호 없이 될 때만 apt로 넣고, 아니면 필요한 명령을 한글로 알려 줘요. 한 번 더 실행해도 안전해요.
 
 ## 플러그인으로 설치
@@ -60,6 +68,12 @@ node scripts/render-episode.mjs /경로/episode.json
 - `reel.mp4` 세로 영상. 음악 없음
 - `contact_sheet.png`
 - `기획서.md` `게시글문구.txt` `X글.txt` `나레이션대본.txt`
+
+영상까지 만들면 컴퓨터에 따라 몇 분 걸려요(맥 M 시리즈에서 10장과 릴스가 약 1분). 카드 이미지만 먼저 보려면:
+
+```bash
+node scripts/render-episode.mjs episode.json --stills-only
+```
 
 표지 세 장을 보려면:
 

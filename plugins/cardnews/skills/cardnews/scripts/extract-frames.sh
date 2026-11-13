@@ -3,6 +3,7 @@
 #   extract-frames.sh 영상.mp4 출력폴더 [간격초] [시작초] [길이초]
 # 간격 기본 0.5초. 0.25도 된다. 사람 얼굴(작가·관람객)이 보이면 그 구간은 버린다.
 set -euo pipefail
+. "$(cd "$(dirname "$0")" && pwd)/env.sh"
 src="${1:-}"
 out="${2:-}"
 every="${3:-0.5}"
@@ -30,10 +31,10 @@ fi
 # 컨택트 시트. 열이 많으면 10열.
 cols=10
 if [ "$count" -lt 10 ]; then cols="$count"; fi
-ffmpeg -y -pattern_type glob -i "$out/frames/frame-*.jpg" \
+ffmpeg -y -framerate 1 -i "$out/frames/frame-%04d.jpg" \
   -vf "scale=240:300:force_original_aspect_ratio=increase,crop=240:300,tile=${cols}x$(( (count + cols - 1) / cols ))" \
   -frames:v 1 -q:v 3 "$out/contact.jpg" 2>/dev/null || \
-ffmpeg -y -pattern_type glob -i "$out/frames/frame-*.jpg" \
+ffmpeg -y -framerate 1 -i "$out/frames/frame-%04d.jpg" \
   -filter_complex "scale=240:300:force_original_aspect_ratio=increase,crop=240:300,tile=${cols}x$(( (count + cols - 1) / cols ))" \
   -frames:v 1 -q:v 3 "$out/contact.jpg"
 echo "프레임 ${count}장 (${every}초 간격) → $out/frames"

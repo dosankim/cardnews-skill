@@ -4,6 +4,7 @@
 #   fetch-media.sh video  URL  out.mp4
 #   fetch-media.sh section URL out.mp4 시작초 끝초
 set -euo pipefail
+. "$(cd "$(dirname "$0")" && pwd)/env.sh"
 kind="${1:-}"
 url="${2:-}"
 out="${3:-}"

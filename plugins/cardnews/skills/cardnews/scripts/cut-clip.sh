@@ -6,6 +6,7 @@
 # 예: 아래 자막을 숨기려면 zoom 0.84, zoomy 0.15
 # 결과: H.264, yuv420p, 1080x1350, setsar=1, 무음. ffprobe로 SAR 1:1을 확인한다.
 set -euo pipefail
+. "$(cd "$(dirname "$0")" && pwd)/env.sh"
 in="${1:-}"
 out="${2:-}"
 start="${3:-}"
