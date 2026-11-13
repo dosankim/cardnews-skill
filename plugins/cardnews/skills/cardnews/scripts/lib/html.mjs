@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { applyLayouts, isComposed, layoutCss, layoutInner, needsPhoto } from "./layouts.mjs";
+
+export { applyLayouts, isComposed, needsPhoto };
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
@@ -125,7 +128,8 @@ function htmlContent(slide, ctx, withPhoto) {
 }
 
 function htmlInfo(slide, ctx, withPhoto) {
-  const css = `.veil{position:absolute;inset:0;background:rgba(8,9,11,.58)}
+  const css = `${withPhoto ? "" : `body{background:${INK}}`}
+.veil{position:absolute;inset:0;background:rgba(8,9,11,.58)}
 .gt{position:absolute;left:0;right:0;top:0;height:260px;background:linear-gradient(rgba(0,0,0,.4),transparent)}
 .box{position:absolute;left:64px;right:64px;top:168px}
 .rule{width:52px;height:4px;background:${JADE};margin-bottom:22px}
@@ -143,7 +147,7 @@ function htmlInfo(slide, ctx, withPhoto) {
     })
     .join("");
   const inner = `${withPhoto ? bgImg(slide.image, slide.imagePosition) : ""}
-<div class="veil"></div><div class="mesh" style="opacity:.04"></div><div class="gt"></div>
+${withPhoto ? '<div class="veil"></div><div class="mesh" style="opacity:.04"></div><div class="gt"></div>' : ""}
 ${topbar(ctx.header, ctx.index, ctx.total)}
 <div class="box"><div class="rule"></div><div class="label">${escapeHtml(slide.kicker || "VISIT INFO")}</div>
 <div class="title">${escapeHtml(slide.title || "관람 정보")}</div>${rows}</div>
@@ -160,7 +164,8 @@ function tipPairs(slide) {
 }
 
 function htmlTips(slide, ctx, withPhoto) {
-  const css = `.veil{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,9,11,.86) 0,rgba(8,9,11,.7) 60%,rgba(8,9,11,.45))}
+  const css = `${withPhoto ? "" : `body{background:${INK}}`}
+.veil{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,9,11,.86) 0,rgba(8,9,11,.7) 60%,rgba(8,9,11,.45))}
 .box{position:absolute;left:64px;right:64px;top:168px}
 .rule{width:52px;height:4px;background:${JADE};margin-bottom:22px}
 .label{font-weight:600;font-size:23px;color:${JADE};margin-bottom:16px;letter-spacing:.18em}
@@ -186,7 +191,7 @@ function htmlTips(slide, ctx, withPhoto) {
     ? ""
     : `<div class="cta"><span>${escapeHtml(slide.cta || "저장해 두고 나중에 봐요")}</span><i>${escapeHtml(slide.ctaMark || "SAVE ↗")}</i></div>`;
   const inner = `${withPhoto ? bgImg(slide.image, slide.imagePosition) : ""}
-<div class="veil"></div>${topbar(ctx.header, ctx.index, ctx.total)}
+${withPhoto ? '<div class="veil"></div>' : ""}${topbar(ctx.header, ctx.index, ctx.total)}
 <div class="box"><div class="rule"></div><div class="label">${escapeHtml(slide.kicker || "TICKET & TIP")}</div>
 ${price}${tips}</div>${cta}
 <div class="credit">${escapeHtml(slide.credit || ctx.credit || "")}</div>`;
@@ -194,7 +199,8 @@ ${price}${tips}</div>${cta}
 }
 
 function htmlCoverA(slide, ctx, withPhoto) {
-  const css = `.g{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35) 0,rgba(0,0,0,0) 30%,rgba(0,0,0,.28) 48%,rgba(6,7,9,.9) 100%)}
+  const css = `body{background:${INK}}
+.g{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35) 0,rgba(0,0,0,0) 30%,rgba(0,0,0,.28) 48%,rgba(6,7,9,.9) 100%)}
 .chip{position:absolute;left:64px;top:60px;border:2px solid #fff;border-radius:999px;padding:11px 22px;font-weight:700;font-size:24px;letter-spacing:-.01em;background:rgba(0,0,0,.25)}
 .handle{position:absolute;right:64px;top:70px;font-weight:600;font-size:20px;color:rgba(255,255,255,.7);letter-spacing:.04em}
 .kick{position:absolute;left:64px;bottom:770px;font-weight:800;font-size:32px;color:${INK};background:#fff;padding:8px 16px;letter-spacing:-.01em}
@@ -234,6 +240,7 @@ function htmlCoverB(slide, ctx) {
 
 function htmlCoverC(slide, ctx, withPhoto) {
   const css = `.g{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,7,9,.78),rgba(6,7,9,.25) 45%,rgba(6,7,9,.9))}
+body{background:${INK}}
 .k{position:absolute;left:64px;top:64px;font-weight:800;font-size:30px;color:${JADE};letter-spacing:-.01em}
 .handle{position:absolute;right:64px;top:72px;font-weight:600;font-size:20px;color:rgba(255,255,255,.7)}
 .h{position:absolute;left:60px;top:140px;font-weight:900;font-size:128px;line-height:1.02;letter-spacing:-.06em}
@@ -259,6 +266,7 @@ function htmlCoverC(slide, ctx, withPhoto) {
 export function buildSlideHtml({ slide, episode, index, total, mode }) {
   const kind = slideKind(slide.role);
   const cover = coverStyle(slide, episode);
+  const layout = slide.layout || (kind === "cover" ? "cover" : kind === "info" ? "info" : kind === "tips" ? "tips" : "bottom");
   const withPhoto = mode !== "overlay";
   const ctx = {
     header: episode.header || episode.channel || "",
@@ -266,17 +274,26 @@ export function buildSlideHtml({ slide, episode, index, total, mode }) {
     credit: episode.credit || "",
     index,
     total,
+    fileUrl,
   };
-  if (kind === "cover" && cover === "B") return htmlCoverB(slide, ctx);
-  if (kind === "cover" && cover === "C") return htmlCoverC(slide, ctx, withPhoto);
-  if (kind === "cover") return htmlCoverA(slide, ctx, withPhoto);
-  if (kind === "info") return htmlInfo(slide, ctx, withPhoto);
-  if (kind === "tips") return htmlTips(slide, ctx, withPhoto);
-  return htmlContent(slide, ctx, withPhoto);
+  if (layout === "cover" || kind === "cover") {
+    if (cover === "B") return htmlCoverB(slide, ctx);
+    if (cover === "C") return htmlCoverC(slide, ctx, withPhoto);
+    return htmlCoverA(slide, ctx, withPhoto);
+  }
+  if (layout === "info") return htmlInfo(slide, ctx, withPhoto && Boolean(slide.image));
+  if (layout === "tips") return htmlTips(slide, ctx, withPhoto && Boolean(slide.image));
+  if (layout === "bottom") return htmlContent(slide, ctx, withPhoto);
+  const inner = layoutInner(layout, slide, ctx);
+  const solid = !needsPhoto(layout);
+  const css = `${layoutCss(layout)}${solid ? `body{background:${layout === "pullquote" || layout === "hanji" || layout === "inset" ? "#efe9dd" : "#0b0c0f"}}` : ""}`;
+  return page(css, inner);
 }
 
 export function isOpaqueCover(slide, episode) {
-  return slideKind(slide.role) === "cover" && coverStyle(slide, episode) === "B";
+  const layout = slide.layout || (slide.role === "cover" ? "cover" : "bottom");
+  if (layout === "cover") return coverStyle(slide, episode) === "B";
+  return isComposed(layout) || (!slide.image && !(slide.images || []).length);
 }
 
 export function buildReelHtml({ channel, lines }) {
@@ -284,12 +301,11 @@ export function buildReelHtml({ channel, lines }) {
   const css = `html,body{width:1080px;height:1920px}
 .gt{position:absolute;left:0;right:0;top:0;height:280px;background:linear-gradient(rgba(0,0,0,.45),transparent)}
 .gb{position:absolute;left:0;right:0;bottom:0;height:860px;background:linear-gradient(transparent,rgba(8,9,11,.5) 36%,rgba(8,9,11,.9))}
-.top{top:148px;font-size:22px}
-.box{position:absolute;left:64px;right:140px;bottom:460px}
-.rule{width:52px;height:4px;background:${JADE};margin-bottom:22px}
-.caption{font-weight:800;font-size:60px;line-height:1.24;letter-spacing:-.03em;white-space:pre-line}`;
-  const inner = `<div class="gt"></div><div class="gb"></div><div class="mesh" style="opacity:.05"></div>
-<div class="top"><span>${escapeHtml(channel || "")}</span></div>
+.top{top:72px;font-size:20px}
+.box{position:absolute;left:64px;right:64px;top:130px}
+.rule{width:52px;height:4px;background:${JADE};margin-bottom:16px}
+.caption{font-weight:800;font-size:42px;line-height:1.25;letter-spacing:-.03em;white-space:pre-line}`;
+  const inner = `<div class="top"><span>${escapeHtml(channel || "")}</span></div>
 <div class="box"><div class="rule"></div><div class="caption">${escapeHtml(text)}</div></div>`;
   return page(css, inner, { width: 1080, height: 1920 });
 }
@@ -299,7 +315,11 @@ export function validateEpisode(episode) {
   if (!episode?.slides?.length) errors.push("slides is empty");
   for (const [i, slide] of (episode.slides || []).entries()) {
     const n = i + 1;
-    if (!slide.image && !slide.video) errors.push(`slide ${n} needs image or video`);
+    const layout = slide.layout || (slide.role === "cover" ? "cover" : "bottom");
+    const graphic = ["statement", "stat", "steps", "checklist", "compare", "timeline", "chart", "pullquote", "hanji", "info", "tips", "cover"].includes(layout);
+    if (!graphic && !slide.image && !slide.video && !(slide.images && slide.images.length)) {
+      errors.push(`slide ${n} needs image, images, or video`);
+    }
     if (slideKind(slide.role) !== "info" && slideKind(slide.role) !== "tips" && !slide.title) {
       errors.push(`slide ${n} needs a title`);
     }

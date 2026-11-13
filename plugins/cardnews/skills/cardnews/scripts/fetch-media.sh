@@ -7,7 +7,7 @@ set -euo pipefail
 . "$(cd "$(dirname "$0")" && pwd)/env.sh"
 kind="${1:-}"
 url="${2:-}"
-out="${3:-}"
+out="$(cardnews_to_unix "${3:-}")"
 start="${4:-}"
 end="${5:-}"
 if [ -z "$kind" ] || [ -z "$url" ] || [ -z "$out" ]; then

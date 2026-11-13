@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 없는 것만 설치한다. 이미 있으면 건너뛴다.
-# 맥은 Homebrew. 윈도우(Git Bash)는 winget. 리눅스는 apt가 비밀번호 없이 될 때만 ffmpeg를 넣고, 아니면 명령만 알려 준다.
+# 맥은 Homebrew. 윈도우 Git Bash는 winget. PowerShell이면 scripts/setup.ps1.
+# 리눅스는 apt가 비밀번호 없이 될 때만 ffmpeg를 넣고, 아니면 명령만 알려 준다.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -180,6 +181,23 @@ else
   else
     say "  없음  npm"
     FAIL=1
+  fi
+fi
+
+if [ -d "$ROOT/node_modules/remotion" ] && [ -d "$ROOT/node_modules/@remotion/cli" ]; then
+  say "  있음  remotion"
+else
+  if have npm; then
+    say "  설치  npm install (remotion)"
+    npm install || FAIL=1
+  fi
+fi
+if [ -d "$ROOT/node_modules/remotion" ] && have node; then
+  say "  설치  npx remotion browser ensure"
+  if (cd "$ROOT" && npx remotion browser ensure); then
+    say "  있음  Remotion 브라우저"
+  else
+    say "  안내  Remotion 브라우저를 못 받았어요. 릴스는 ffmpeg로 만들어요."
   fi
 fi
 

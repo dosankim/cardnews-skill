@@ -1,7 +1,7 @@
 {
   "title": "경복궁",
   "place": "서울",
-  "kind": "space",
+  "kind": "place",
   "cover": "A",
   "header": "GYEONGBOKGUNG — SEOUL",
   "channel": "공간노트",
@@ -41,7 +41,8 @@
           "metaLeft": "서울 종로구 사직로 161",
           "metaRight": "화요일 휴궁"
         }
-      }
+      },
+      "layout": "cover"
     },
     {
       "role": "content",
@@ -53,31 +54,52 @@
       "imagePosition": "center 100%",
       "credit": "사진: Richard Fisher, CC BY 2.0",
       "seconds": 8,
-      "motion": "pan-up"
+      "motion": "pan-up",
+      "layout": "split"
     },
     {
       "role": "content",
       "slug": "why",
-      "kicker": "WHY GO",
+      "kicker": "비움이 본편",
       "title": "안도 바깥도\n비움이 본편이에요",
       "body": "근정전 바닥과 흥례문 마당은 일부러 비워 둔 공간이에요. 사람이 적을 때 그 크기가 보여요.",
       "image": "media/10-gyeonghoeru-still.jpg",
       "imagePosition": "center 42%",
       "credit": "사진: eimoberg, CC BY 2.0",
       "seconds": 8,
-      "motion": "zoom-in"
+      "motion": "zoom-in",
+      "layout": "breather"
     },
     {
       "role": "content",
       "slug": "geunjeongjeon",
-      "kicker": "근정전",
-      "title": "왕이 조회를 열던\n가장 높은 전각이에요",
+      "kicker": "연표",
+      "title": "세 번의 궁",
       "body": "정전이에요. 기둥과 천장만 봐도 높이가 먼저 와요.",
-      "image": "media/03-hall.jpg",
+      "image": "",
       "imagePosition": "center 55%",
-      "credit": "사진: Basile Morin, CC BY-SA 4.0",
+      "credit": "연도: 경복궁 누리집",
       "seconds": 8,
-      "motion": "zoom-out"
+      "motion": "zoom-out",
+      "layout": "timeline",
+      "events": [
+        {
+          "when": "1395",
+          "text": "태조 4년에 법궁을 세웠어요."
+        },
+        {
+          "when": "1592",
+          "text": "임진왜란으로 불탔어요."
+        },
+        {
+          "when": "1867",
+          "text": "고종 때 다시 세웠어요."
+        },
+        {
+          "when": "지금",
+          "text": "비어 있는 마당이 본편이에요."
+        }
+      ]
     },
     {
       "role": "content",
@@ -89,52 +111,61 @@
       "imagePosition": "center 45%",
       "credit": "사진: Frank Schulenburg, CC BY-SA 4.0",
       "seconds": 8,
-      "motion": "pan-right"
+      "motion": "pan-right",
+      "layout": "bottom"
     },
     {
       "role": "content",
       "slug": "hyangwonjeong",
       "kicker": "향원정",
-      "title": "연못이 절반을\n그려 주는 정자예요",
+      "title": "연못 위의 두 정자",
       "body": "건청궁 앞, 섬 위의 육각 정자예요. 이름은 향기가 멀리 간다는 뜻이에요.",
       "image": "media/05-hyangwonjeong.jpg",
       "imagePosition": "center 50%",
       "credit": "사진: Basile Morin, CC BY-SA 4.0",
       "seconds": 8,
-      "motion": "zoom-out"
+      "motion": "zoom-out",
+      "layout": "grid",
+      "images": [
+        "media/05-hyangwonjeong.jpg",
+        "media/04-gyeonghoeru.jpg"
+      ]
     },
     {
       "role": "content",
       "slug": "winter",
       "kicker": "향원정 · 겨울",
-      "title": "연못이 멈추면\n정자가 더 또렷해요",
+      "title": "향기는\n{{멀리}} 간다는 이름",
       "body": "같은 자리도 계절마다 달라요. 겨울에는 물 대신 눈이 받쳐요.",
-      "image": "media/06-hyangwonjeong-winter.jpg",
+      "image": "",
       "imagePosition": "center 42%",
-      "credit": "사진: 문화재청, KOGL 제1유형",
+      "credit": "",
       "seconds": 8,
-      "motion": "pan-left"
+      "motion": "pan-left",
+      "layout": "pullquote",
+      "by": "향원정 · 건청궁 앞 연못"
     },
     {
       "role": "content",
       "slug": "amisan",
       "kicker": "아미산",
-      "title": "연기가 나가던\n자리가 정원이 됐어요",
-      "body": "교태전 온돌 굴뚝 네 기예요. 경복궁을 다시 지을 때 새로 만든 것이에요.",
+      "title": "굴뚝이 정원이 됐어요",
+      "body": "교태전 온돌 연기 길, 네 기.",
       "image": "media/07-amisan.jpg",
       "imagePosition": "center 40%",
       "credit": "사진: G41rn8, CC BY-SA 4.0",
       "seconds": 8,
-      "motion": "zoom-in"
+      "motion": "zoom-in",
+      "layout": "inset"
     },
     {
       "role": "info",
       "slug": "info",
       "kicker": "VISIT INFO",
       "title": "관람 정보",
-      "image": "media/08-gyeonghoeru-wide.jpg",
+      "image": "",
       "imagePosition": "center 30%",
-      "credit": "궁능유적본부 · 2026-11-13 확인",
+      "credit": "경복궁 누리집 · 2026-07",
       "seconds": 8,
       "facts": [
         {
@@ -157,7 +188,8 @@
           "label": "문의",
           "value": "02-3700-3900"
         }
-      ]
+      ],
+      "layout": "info"
     },
     {
       "role": "tips",
@@ -188,10 +220,12 @@
         }
       ],
       "cta": "저장해 두고 가기 전에 봐요",
-      "ctaMark": "SAVE ↗"
+      "ctaMark": "SAVE ↗",
+      "layout": "tips"
     }
   ],
   "reel": {
+    "preset": "editorial",
     "beats": [
       {
         "slide": 1,
@@ -209,7 +243,9 @@
         "lines": [
           "1395년에 세운",
           "조선의 법궁이에요"
-        ]
+        ],
+        "count": 1395,
+        "countUnit": "년"
       },
       {
         "slide": 4,

@@ -4,8 +4,8 @@
 # 간격 기본 0.5초. 0.25도 된다. 사람 얼굴(작가·관람객)이 보이면 그 구간은 버린다.
 set -euo pipefail
 . "$(cd "$(dirname "$0")" && pwd)/env.sh"
-src="${1:-}"
-out="${2:-}"
+src="$(cardnews_to_unix "${1:-}")"
+out="$(cardnews_to_unix "${2:-}")"
 every="${3:-0.5}"
 start="${4:-0}"
 dur="${5:-}"

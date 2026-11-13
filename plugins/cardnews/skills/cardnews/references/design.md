@@ -51,10 +51,29 @@
 
 표지 슬라이드에 `variants.B`, `variants.C`를 두면 그 문구로 그린다.
 
-## 안쪽 장
+## 판형
 
-- content: 라벨, 제목, 본문. 사진은 풀블리드, 아래 그라데이션
-- info: `VISIT INFO` 같은 라벨, 제목, `facts`
-- tips: 선택 `price` + `priceNote`, `tips`는 `{k, v}`, 아래 알약 `cta`
+토큰은 같고, 장의 구성만 바뀐다. 슬라이드의 `layout`. 없으면 갈래의 기본 순서를 쓴다. 바로 앞 장과 같은 판형은 피한다. 10장에 서로 다른 판형을 5개 이상 쓰고, 빽빽한 장과 한산한 장을 번갈아 둔다.
 
-`role`이 `story` / `section`이면 content, `cta`면 tips로 그린다.
+| layout | 모습 | 밀도 |
+|---|---|---|
+| `bottom` | 풀블리드 사진, 아래 글 | 한산 |
+| `top` | 위 글, 아래 사진 | 한산 |
+| `split` | 왼쪽 먹색 패널, 오른쪽 사진 | 빽빽 |
+| `inset` | 한지 위 액자 사진과 캡션 | 빽빽 |
+| `statement` | 가운데 큰 문장 | 한산 |
+| `stat` | 큰 숫자 `stat` + `unit` | 한산 |
+| `grid` | `images` 두세 장 | 빽빽 |
+| `steps` | 번호 목록 `steps` | 빽빽 |
+| `checklist` | 네모 칸 `items` | 빽빽 |
+| `compare` | `columns` 두 칸 | 빽빽 |
+| `timeline` | `events` `{when, text}` | 빽빽 |
+| `chart` | `bars` `{label, value}` | 빽빽 |
+| `pullquote` | 한지, 세리프 인용 | 한산 |
+| `side` | 왼쪽 세로 글, 오른쪽 사진 | 한산 |
+| `breather` | 사진, 글은 작은 킥만 | 한산 |
+| `hanji` | 한지 위 세리프 | 한산 |
+| `info` | `facts` 표 | 빽빽 |
+| `tips` | 요금과 팁, 저장 알약 | 빽빽 |
+
+사진이 없는 판형은 먹색이나 한지로 그린다. 그 장은 스틸을 그대로 클립으로 쓴다. 릴스는 완성된 카드를 9:16 위에 올려, 판형이 보이게 한다.

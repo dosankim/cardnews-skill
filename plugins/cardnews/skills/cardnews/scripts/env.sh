@@ -13,6 +13,24 @@ cardnews_is_windows() {
   case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) return 0 ;; *) return 1 ;; esac
 }
 
+# Git Bash에 넘긴 C:\... 또는 C:/... 경로를 /c/... 로 바꾼다. 이미 유닉스 경로면 그대로 둔다.
+cardnews_to_unix() {
+  local p="$1"
+  if cardnews_is_windows && command -v cygpath >/dev/null 2>&1; then
+    case "$p" in
+      [A-Za-z]:*)
+        local u
+        u="$(cygpath -u "$p" 2>/dev/null || true)"
+        if [ -n "$u" ]; then
+          printf '%s\n' "$u"
+          return 0
+        fi
+        ;;
+    esac
+  fi
+  printf '%s\n' "$p"
+}
+
 cardnews_add_path "$HOME/.local/bin"
 
 if cardnews_is_windows; then
