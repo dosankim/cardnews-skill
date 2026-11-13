@@ -1,0 +1,16 @@
+{
+  "name": "cardnews",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "한국어 인스타 카드뉴스 렌더러. HTML/CSS를 헤드리스 크로미움으로 그립니다.",
+  "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "check": "bash scripts/check-deps.sh",
+    "render": "node scripts/render-episode.mjs",
+    "self-check": "node scripts/self-check.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.56.0"
+  }
+}

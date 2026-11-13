@@ -1,0 +1,8 @@
+{
+  "name": "cardnews",
+  "description": "사람이 고른 주제로 한국어 인스타 카드뉴스 10장, 캡션, X 글, 릴스를 만듭니다.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Youngwoo"
+  }
+}

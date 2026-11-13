@@ -1,0 +1,14 @@
+{
+  "name": "cardnews",
+  "description": "한국어 인스타 카드뉴스 스킬",
+  "owner": {
+    "name": "Youngwoo"
+  },
+  "plugins": [
+    {
+      "name": "cardnews",
+      "source": "./plugins/cardnews",
+      "description": "주제를 인스타 카드뉴스 10장, 캡션, X 글, 9:16 릴스로 만듭니다."
+    }
+  ]
+}
