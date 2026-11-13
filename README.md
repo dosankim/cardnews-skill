@@ -29,7 +29,7 @@ Node 20이 없으면 맥에서는 `brew install node`를 시도해요. 리눅스
 이 저장소 루트에 마켓 목록이 있어요.
 
 ```bash
-claude plugin marketplace add 이-저장소의-github-주소
+claude plugin marketplace add dosankim/cardnews-skill
 claude plugin install cardnews@cardnews
 ```
 
