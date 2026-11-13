@@ -1,0 +1,270 @@
+{
+  "title": "경복궁",
+  "place": "서울",
+  "kind": "space",
+  "cover": "A",
+  "header": "GYEONGBOKGUNG — SEOUL",
+  "channel": "공간노트",
+  "handle": "@your_channel",
+  "credit": "사진: 위키미디어 공용 · 문화재청",
+  "outputDir": ".",
+  "slides": [
+    {
+      "role": "cover",
+      "cover": "A",
+      "slug": "cover",
+      "chip": "1395년에 세운 법궁",
+      "kick": "사람이 빠진 오후",
+      "title": "비어\n{{있을 때}}\n더 커요",
+      "metaLeft": "서울 · 경복궁",
+      "metaRight": "화요일 휴궁",
+      "image": "media/01-heungnyemun.jpg",
+      "imagePosition": "center 58%",
+      "credit": "사진: Basile Morin, CC BY-SA 4.0",
+      "seconds": 8,
+      "motion": "zoom-in",
+      "variants": {
+        "B": {
+          "title": "빈 마당은\n{{무엇을}} 보여줄까요",
+          "tag": "GYEONGBOKGUNG · SEOUL",
+          "metaLeft": "조선의 법궁",
+          "metaRight": "화요일 휴궁"
+        },
+        "C": {
+          "kick": "가기 전에 저장 필수",
+          "title": "경복궁\n{{이것만}}\n보고 와요",
+          "items": [
+            "흥례문 빈 마당",
+            "근정전의 비어 있는 바닥",
+            "물 위의 경회루"
+          ],
+          "metaLeft": "서울 종로구 사직로 161",
+          "metaRight": "화요일 휴궁"
+        }
+      }
+    },
+    {
+      "role": "content",
+      "slug": "about",
+      "kicker": "ABOUT",
+      "title": "1395년에 세운\n조선의 법궁이에요",
+      "body": "태조 4년에 지었어요. 임진왜란 때 불탄 뒤, 1867년에 다시 세운 궁이에요.",
+      "image": "media/02-geunjeongjeon.jpg",
+      "imagePosition": "center 100%",
+      "credit": "사진: Richard Fisher, CC BY 2.0",
+      "seconds": 8,
+      "motion": "pan-up"
+    },
+    {
+      "role": "content",
+      "slug": "why",
+      "kicker": "WHY GO",
+      "title": "안도 바깥도\n비움이 본편이에요",
+      "body": "근정전 바닥과 흥례문 마당은 일부러 비워 둔 공간이에요. 사람이 적을 때 그 크기가 보여요.",
+      "image": "media/10-gyeonghoeru-still.jpg",
+      "imagePosition": "center 42%",
+      "credit": "사진: eimoberg, CC BY 2.0",
+      "seconds": 8,
+      "motion": "zoom-in"
+    },
+    {
+      "role": "content",
+      "slug": "geunjeongjeon",
+      "kicker": "근정전",
+      "title": "왕이 조회를 열던\n가장 높은 전각이에요",
+      "body": "정전이에요. 기둥과 천장만 봐도 높이가 먼저 와요.",
+      "image": "media/03-hall.jpg",
+      "imagePosition": "center 55%",
+      "credit": "사진: Basile Morin, CC BY-SA 4.0",
+      "seconds": 8,
+      "motion": "zoom-out"
+    },
+    {
+      "role": "content",
+      "slug": "gyeonghoeru",
+      "kicker": "경회루",
+      "title": "물 위에 띄운\n잔치의 누각이에요",
+      "body": "손님을 맞거나 연회를 열던 곳이에요. 난간에 서면 연못이 건물을 받쳐요.",
+      "image": "media/04-gyeonghoeru.jpg",
+      "imagePosition": "center 45%",
+      "credit": "사진: Frank Schulenburg, CC BY-SA 4.0",
+      "seconds": 8,
+      "motion": "pan-right"
+    },
+    {
+      "role": "content",
+      "slug": "hyangwonjeong",
+      "kicker": "향원정",
+      "title": "연못이 절반을\n그려 주는 정자예요",
+      "body": "건청궁 앞, 섬 위의 육각 정자예요. 이름은 향기가 멀리 간다는 뜻이에요.",
+      "image": "media/05-hyangwonjeong.jpg",
+      "imagePosition": "center 50%",
+      "credit": "사진: Basile Morin, CC BY-SA 4.0",
+      "seconds": 8,
+      "motion": "zoom-out"
+    },
+    {
+      "role": "content",
+      "slug": "winter",
+      "kicker": "향원정 · 겨울",
+      "title": "연못이 멈추면\n정자가 더 또렷해요",
+      "body": "같은 자리도 계절마다 달라요. 겨울에는 물 대신 눈이 받쳐요.",
+      "image": "media/06-hyangwonjeong-winter.jpg",
+      "imagePosition": "center 42%",
+      "credit": "사진: 문화재청, KOGL 제1유형",
+      "seconds": 8,
+      "motion": "pan-left"
+    },
+    {
+      "role": "content",
+      "slug": "amisan",
+      "kicker": "아미산",
+      "title": "연기가 나가던\n자리가 정원이 됐어요",
+      "body": "교태전 온돌 굴뚝 네 기예요. 경복궁을 다시 지을 때 새로 만든 것이에요.",
+      "image": "media/07-amisan.jpg",
+      "imagePosition": "center 40%",
+      "credit": "사진: G41rn8, CC BY-SA 4.0",
+      "seconds": 8,
+      "motion": "zoom-in"
+    },
+    {
+      "role": "info",
+      "slug": "info",
+      "kicker": "VISIT INFO",
+      "title": "관람 정보",
+      "image": "media/08-gyeonghoeru-wide.jpg",
+      "imagePosition": "center 30%",
+      "credit": "궁능유적본부 · 2026-11-13 확인",
+      "seconds": 8,
+      "facts": [
+        {
+          "label": "시간",
+          "value": "11–12월 09:00–17:00"
+        },
+        {
+          "label": "입장",
+          "value": "16:00에 마감"
+        },
+        {
+          "label": "휴궁",
+          "value": "매주 화요일"
+        },
+        {
+          "label": "장소",
+          "value": "서울 종로구 사직로 161"
+        },
+        {
+          "label": "문의",
+          "value": "02-3700-3900"
+        }
+      ]
+    },
+    {
+      "role": "tips",
+      "slug": "tips",
+      "kicker": "TICKET & TIP",
+      "price": "3,000원",
+      "priceNote": "대인 관람료",
+      "image": "media/09-roof.jpg",
+      "imagePosition": "center 35%",
+      "credit": "사진: Ethan Doyle White, CC BY-SA 4.0",
+      "seconds": 8,
+      "tips": [
+        {
+          "k": "공휴일인 화요일",
+          "v": "그날은 열고, 다음 평일이 휴궁이에요"
+        },
+        {
+          "k": "한복",
+          "v": "저고리에 치마나 바지를 갖춰야 무료예요"
+        },
+        {
+          "k": "문화가 있는 날",
+          "v": "경복궁은 무료 대상이 아니에요"
+        },
+        {
+          "k": "신분증",
+          "v": "만 24세 이하·만 65세 이상 내국인은 무료예요"
+        }
+      ],
+      "cta": "저장해 두고 가기 전에 봐요",
+      "ctaMark": "SAVE ↗"
+    }
+  ],
+  "reel": {
+    "beats": [
+      {
+        "slide": 1,
+        "seconds": 3.2,
+        "motion": "zoom-in",
+        "lines": [
+          "비어 있는 마당이",
+          "경복궁의 본편이에요"
+        ]
+      },
+      {
+        "slide": 2,
+        "seconds": 3.0,
+        "motion": "pan-up",
+        "lines": [
+          "1395년에 세운",
+          "조선의 법궁이에요"
+        ]
+      },
+      {
+        "slide": 4,
+        "seconds": 3.0,
+        "motion": "zoom-in",
+        "lines": [
+          "근정전 안은",
+          "일부러 비워 둔 자리예요"
+        ]
+      },
+      {
+        "slide": 5,
+        "seconds": 3.1,
+        "motion": "pan-right",
+        "lines": [
+          "경회루는",
+          "물 위에 띄운 누각이에요"
+        ]
+      },
+      {
+        "slide": 6,
+        "seconds": 3.1,
+        "motion": "zoom-out",
+        "lines": [
+          "향원정은",
+          "연못이 반을 그려요"
+        ]
+      },
+      {
+        "slide": 8,
+        "seconds": 3.0,
+        "motion": "zoom-in",
+        "lines": [
+          "아미산 굴뚝은",
+          "연기가 나가던 정원이에요"
+        ]
+      },
+      {
+        "slide": 9,
+        "seconds": 3.2,
+        "motion": "pan-up",
+        "lines": [
+          "화요일은 쉬어요",
+          "11–12월은 다섯 시에 닫혀요"
+        ]
+      },
+      {
+        "slide": 10,
+        "seconds": 3.2,
+        "motion": "zoom-in",
+        "lines": [
+          "저장해 두면",
+          "가기 전에 다시 봐요"
+        ]
+      }
+    ]
+  }
+}

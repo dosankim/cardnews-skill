@@ -1,0 +1,11 @@
+공식 영상이 없는 장은 공식(또는 사용 가능한) 스틸에 느린 카메라 무브를 넣었어요.
+- 01_cover: 느린 카메라 (zoom-in)
+- 02_about: 느린 카메라 (pan-up)
+- 03_why: 느린 카메라 (zoom-in)
+- 04_geunjeongjeon: 느린 카메라 (zoom-out)
+- 05_gyeonghoeru: 느린 카메라 (pan-right)
+- 06_hyangwonjeong: 느린 카메라 (zoom-out)
+- 07_winter: 느린 카메라 (pan-left)
+- 08_amisan: 느린 카메라 (zoom-in)
+- 09_info: 느린 카메라 (zoom-out)
+- 10_tips: 느린 카메라 (pan-up)
